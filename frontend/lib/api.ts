@@ -14,14 +14,21 @@ export async function apiFetch<T>(
   options: { token?: string; method?: string; body?: unknown } = {},
 ): Promise<T> {
   const { token, method = "GET", body } = options;
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  // For FormData, let the browser set Content-Type (incl. the multipart boundary).
+  if (body !== undefined && !isFormData) headers["Content-Type"] = "application/json";
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body:
+      body === undefined
+        ? undefined
+        : isFormData
+          ? (body as FormData)
+          : JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -34,6 +41,7 @@ export async function apiFetch<T>(
     }
     throw new ApiError(res.status, detail);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
