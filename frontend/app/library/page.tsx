@@ -40,9 +40,17 @@ export default function LibraryPage() {
     <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Your library</h1>
-        <Link href="/profile" className="text-sm text-slate-500 hover:text-brand">
-          Profile
-        </Link>
+        <div className="flex items-center gap-3 text-sm">
+          <Link href="/chat" className="text-slate-500 hover:text-brand">
+            Companion
+          </Link>
+          <Link href="/quiz" className="text-slate-500 hover:text-brand">
+            Quiz
+          </Link>
+          <Link href="/profile" className="text-slate-500 hover:text-brand">
+            Profile
+          </Link>
+        </div>
       </header>
       <p className="mt-1 text-sm text-slate-600">
         Upload your study materials. We extract, chunk and embed them so your companion can

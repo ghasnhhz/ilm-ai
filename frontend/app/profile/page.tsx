@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
 import { apiFetch } from "@/lib/api";
@@ -13,12 +14,11 @@ type Me = {
   provider: string;
   goal: Goal | null;
 };
-
-const stats = [
-  { label: "Sessions completed", value: "—" },
-  { label: "Topics covered", value: "—" },
-  { label: "Knowledge score", value: "—" },
-];
+type QuizStats = {
+  sessions_completed: number;
+  topics_covered: number;
+  knowledge_score: number;
+};
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -29,6 +29,7 @@ export default function ProfilePage() {
   const [targetDate, setTargetDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [quizStats, setQuizStats] = useState<QuizStats | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -36,6 +37,7 @@ export default function ProfilePage() {
     setMe(data);
     setGoalText(data.goal?.goal_text ?? "");
     setTargetDate(data.goal?.target_date ?? "");
+    apiFetch<QuizStats>("/quiz/stats", { token }).then(setQuizStats).catch(() => {});
   }, [token]);
 
   useEffect(() => {
@@ -68,12 +70,23 @@ export default function ProfilePage() {
     <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Your profile</h1>
-        <button
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="text-sm text-slate-500 hover:text-brand"
-        >
-          Log out
-        </button>
+        <div className="flex items-center gap-3 text-sm">
+          <Link href="/library" className="text-slate-500 hover:text-brand">
+            Library
+          </Link>
+          <Link href="/quiz" className="text-slate-500 hover:text-brand">
+            Quiz
+          </Link>
+          <Link href="/chat" className="text-slate-500 hover:text-brand">
+            Companion
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="text-slate-500 hover:text-brand"
+          >
+            Log out
+          </button>
+        </div>
       </header>
 
       <section className="mt-6 rounded-xl border border-slate-200 p-5">
@@ -85,7 +98,14 @@ export default function ProfilePage() {
       </section>
 
       <section className="mt-4 grid grid-cols-3 gap-3">
-        {stats.map((s) => (
+        {[
+          { label: "Sessions completed", value: quizStats?.sessions_completed ?? "—" },
+          { label: "Topics covered", value: quizStats?.topics_covered ?? "—" },
+          {
+            label: "Knowledge score",
+            value: quizStats ? `${quizStats.knowledge_score}%` : "—",
+          },
+        ].map((s) => (
           <div
             key={s.label}
             className="rounded-xl border border-slate-200 p-3 text-center"

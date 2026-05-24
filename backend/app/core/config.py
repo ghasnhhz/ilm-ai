@@ -1,10 +1,15 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Resolve the project root from this file's location so the .env is always
+# found regardless of which directory uvicorn/alembic is run from.
+_ENV_FILE = str(Path(__file__).resolve().parent.parent.parent.parent / ".env")
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     # --- App ---
     app_name: str = "Ilm AI"
