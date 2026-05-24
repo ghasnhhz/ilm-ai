@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`chore/project-scaffold`
+`feature/auth`
 
 ## Last Completed Task
-Phase 0 — project scaffold (monorepo, Docker configs, env, README). `docker compose up` left unverified (Docker not installed locally).
+Phase 1 — auth & profiles (backend JWT + Alembic + endpoints; NextAuth credentials+Google; signup/login/profile pages; protected middleware). Frontend `npm run build` + `tsc` pass; backend runtime e2e deferred (no Docker locally).
 
 ## Next Task
-Start Phase 1: auth & profiles (`feature/auth`).
+Start Phase 2: knowledge base & RAG ingestion (`feature/knowledge-base`).
 
 ---
 
@@ -41,20 +41,21 @@ Start Phase 1: auth & profiles (`feature/auth`).
 - [!] Verify `docker compose up` — BLOCKED: Docker not installed locally; verify when available
 
 ## Phase 1 — Auth [`feature/auth`]
-- [ ] Models: `users`, `user_goals` (SQLAlchemy)
-- [ ] `core/security.py` — bcrypt hashing + JWT encode/decode (access+refresh)
-- [ ] `api/deps.py` — `get_current_user` Bearer dependency
-- [ ] `POST /auth/register`
-- [ ] `POST /auth/login`
-- [ ] `GET /auth/me`
-- [ ] `PUT /auth/goal` — set learning goal + target date
-- [ ] Alembic migration `0001_users`
-- [ ] NextAuth config: credentials provider + Google OAuth, JWT session
-- [ ] `app/(auth)/signup/page.tsx`
-- [ ] `app/(auth)/login/page.tsx`
-- [ ] `app/profile/page.tsx` — name/email/goal/target date + placeholder stats
-- [ ] `middleware.ts` — protect app routes
-- [ ] Verify: register → login → `/auth/me`; Google round-trip; protected redirect
+- [x] Models: `users`, `user_goals` (SQLAlchemy, UUID PKs)
+- [x] `core/security.py` — bcrypt hashing + JWT encode/decode (access+refresh)
+- [x] `api/deps.py` — `get_current_user` Bearer dependency
+- [x] `POST /auth/register` (+ `POST /auth/refresh`, `POST /auth/oauth` bridge)
+- [x] `POST /auth/login`
+- [x] `GET /auth/me`
+- [x] `PUT /auth/goal` — set learning goal + target date
+- [x] Alembic migration `0001_users` (+ alembic.ini, env.py, script.py.mako)
+- [x] NextAuth config: credentials provider + Google OAuth, JWT session (backend JWT is canonical)
+- [x] `app/(auth)/signup/page.tsx`
+- [x] `app/(auth)/login/page.tsx`
+- [x] `app/profile/page.tsx` — name/email/goal/target date + placeholder stats
+- [x] `middleware.ts` — protect app routes
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred, needs Docker/Postgres): `alembic upgrade head`; register→login→`/auth/me`; Google round-trip; `/profile` redirect when unauthenticated
 
 ## Phase 2 — Knowledge Base [`feature/knowledge-base`]
 - [ ] Models: `collections`, `materials`, `material_chunks` (embedding `vector(1536)` + index)
