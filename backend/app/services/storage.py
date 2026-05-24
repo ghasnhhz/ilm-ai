@@ -31,8 +31,20 @@ def build_key(user_id: uuid.UUID, material_id: uuid.UUID, filename: str) -> str:
     return f"users/{user_id}/{material_id}/{safe}"
 
 
+def _ensure_bucket(client) -> None:
+    try:
+        client.head_bucket(Bucket=settings.s3_bucket)
+    except Exception:
+        try:
+            client.create_bucket(Bucket=settings.s3_bucket)
+        except Exception:
+            pass  # bucket may already exist or creation not supported by this endpoint
+
+
 def put_object(key: str, data: bytes, content_type: str) -> str:
-    _client().put_object(
+    client = _client()
+    _ensure_bucket(client)
+    client.put_object(
         Bucket=settings.s3_bucket, Key=key, Body=data, ContentType=content_type
     )
     return key

@@ -4,13 +4,14 @@ uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 
 # --- Config / validation ---
-pydantic==2.10.4
-pydantic-settings==2.7.0
+pydantic==2.13.4
+pydantic-settings==2.14.1
+email-validator==2.2.0
 
 # --- Database ---
 sqlalchemy==2.0.36
 alembic==1.14.0
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.12
 pgvector==0.3.6
 
 # --- Auth ---
@@ -22,7 +23,7 @@ anthropic==0.42.0
 sentence-transformers==3.3.1
 langchain==0.3.14
 langchain-community==0.3.14
-tiktoken==0.8.0
+tiktoken==0.13.0
 
 # --- Document parsing ---
 pypdf==5.1.0
