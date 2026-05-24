@@ -1,0 +1,54 @@
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Python / backend ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# ---- Node / frontend ----
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ---- Local-only planning docs (not for the repo) ----
+ILM_AI_MASTER_PROMPT.md
+PLAN.md
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ---- Data / uploads (local dev) ----
+uploads/
+storage/
+*.sqlite
+*.sqlite3
+
+# ---- Docker / misc ----
+.docker/
+coverage/
+.coverage
+htmlcov/
