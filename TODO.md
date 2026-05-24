@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`feature/auth`
+`feature/knowledge-base`
 
 ## Last Completed Task
-Phase 1 — auth & profiles (backend JWT + Alembic + endpoints; NextAuth credentials+Google; signup/login/profile pages; protected middleware). Frontend `npm run build` + `tsc` pass; backend runtime e2e deferred (no Docker locally).
+Phase 2 — knowledge base & RAG ingestion (models collections/materials/material_chunks with pgvector + HNSW index; storage/ingest/embeddings services with OpenAI + opt-in dev fallback; materials + collections endpoints; Alembic 0002; `/library` page with upload/paste/collections/list). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Docker/Postgres/S3 locally).
 
 ## Next Task
-Start Phase 2: knowledge base & RAG ingestion (`feature/knowledge-base`).
+Start Phase 3: AI companion chat (`feature/ai-companion`).
 
 ---
 
@@ -58,18 +58,19 @@ Start Phase 2: knowledge base & RAG ingestion (`feature/knowledge-base`).
 - [!] Verify (deferred, needs Docker/Postgres): `alembic upgrade head`; register→login→`/auth/me`; Google round-trip; `/profile` redirect when unauthenticated
 
 ## Phase 2 — Knowledge Base [`feature/knowledge-base`]
-- [ ] Models: `collections`, `materials`, `material_chunks` (embedding `vector(1536)` + index)
-- [ ] Text extraction: PDF (pypdf), DOCX (python-docx), TXT/paste
-- [ ] Chunking service (~512 tokens, 50 overlap)
-- [ ] `llm/embeddings.py` + `services/embeddings.py` — batch embed (text-embedding-3-small)
-- [ ] `services/storage.py` — S3/Supabase raw file upload
-- [ ] `POST /materials/upload` (multipart)
-- [ ] `POST /materials/paste`
-- [ ] `GET /materials`, `GET /materials/{id}`, `DELETE /materials/{id}`
-- [ ] Collection CRUD endpoints
-- [ ] Alembic migration `0002_materials`
-- [ ] Frontend `/library`: upload zone, collection manager, material list + status
-- [ ] Verify: upload PDF → chunks with embeddings, user-scoped; delete cleans up
+- [x] Models: `collections`, `materials`, `material_chunks` (embedding `vector(1536)` + HNSW index)
+- [x] Text extraction: PDF (pypdf), DOCX (python-docx), TXT/paste
+- [x] Chunking service (~512 tokens, 50 overlap; tiktoken cl100k_base + char fallback)
+- [x] `llm/embeddings.py` + `services/embeddings.py` — batch embed (text-embedding-3-small; opt-in dev fallback via `DEV_FAKE_EMBEDDINGS`)
+- [x] `services/storage.py` — S3/Supabase raw file upload (required; storage_key NOT NULL)
+- [x] `POST /materials/upload` (multipart)
+- [x] `POST /materials/paste`
+- [x] `GET /materials`, `GET /materials/{id}`, `DELETE /materials/{id}`
+- [x] Collection CRUD endpoints (`app/api/collections.py`)
+- [x] Alembic migration `0002_materials`
+- [x] Frontend `/library`: upload zone (drag/drop + paste), collection manager, material list + status
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred, needs Docker/Postgres+pgvector/S3): `alembic upgrade head`; upload PDF → chunks with non-null embeddings, user-scoped; paste path; delete removes chunks + S3 object; cross-user isolation
 
 ## Phase 3 — AI Companion [`feature/ai-companion`]
 - [ ] Models: `chat_sessions`, `chat_messages` (citations JSON)

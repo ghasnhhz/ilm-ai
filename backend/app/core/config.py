@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 1536
+    # Dev-only: when no OpenAI key is set, generate deterministic local embeddings so the
+    # ingestion pipeline is testable offline. Never enable in production.
+    dev_fake_embeddings: bool = False
 
     # --- Storage (S3 / Supabase) ---
     s3_bucket: str = ""
