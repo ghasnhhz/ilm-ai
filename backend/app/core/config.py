@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-6"
     openai_api_key: str = ""
-    embedding_model: str = "text-embedding-3-small"
-    embedding_dim: int = 1536
+    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_dim: int = 384
     # Dev-only: when no OpenAI key is set, generate deterministic local embeddings so the
     # ingestion pipeline is testable offline. Never enable in production.
     dev_fake_embeddings: bool = False

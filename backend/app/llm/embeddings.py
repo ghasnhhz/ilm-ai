@@ -1,19 +1,19 @@
-"""Embedding provider: OpenAI text-embedding-3-small, with an opt-in dev fallback.
+"""Embedding provider: sentence-transformers (local, no API key required).
 
-- Real key (`OPENAI_API_KEY`) -> batch call OpenAI.
-- No key + `DEV_FAKE_EMBEDDINGS=true` -> deterministic local vectors (dev/offline only).
-- No key + flag off -> raise, so the caller marks the material `failed` honestly.
+The model is downloaded once on first use and cached for the process lifetime.
+DEV_FAKE_EMBEDDINGS=true skips the model entirely for ultra-fast offline tests.
 """
 
 import hashlib
 import math
 import random
+from functools import lru_cache
 
 from app.core.config import settings
 
 
 class EmbeddingUnavailableError(RuntimeError):
-    """Raised when no embedding backend is configured."""
+    """Raised when the embedding backend fails to load."""
 
 
 def _fake_embedding(text: str) -> list[float]:
@@ -24,21 +24,18 @@ def _fake_embedding(text: str) -> list[float]:
     return [v / norm for v in vec]
 
 
+@lru_cache(maxsize=1)
+def _get_model():
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer(settings.embedding_model)
+
+
 def embed_texts(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
 
-    if settings.openai_api_key:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=settings.openai_api_key)
-        resp = client.embeddings.create(model=settings.embedding_model, input=texts)
-        return [item.embedding for item in resp.data]
-
     if settings.dev_fake_embeddings:
         return [_fake_embedding(t) for t in texts]
 
-    raise EmbeddingUnavailableError(
-        "No embedding backend configured: set OPENAI_API_KEY "
-        "(or DEV_FAKE_EMBEDDINGS=true for offline development)."
-    )
+    model = _get_model()
+    return model.encode(texts, normalize_embeddings=True).tolist()
