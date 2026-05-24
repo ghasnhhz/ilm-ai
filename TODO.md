@@ -13,32 +13,32 @@
 ---
 
 ## Current Branch
-`main`
+`chore/project-scaffold`
 
 ## Last Completed Task
-Initialised repository and tracking files (PLAN.md, TODO.md, .gitignore).
+Phase 0 — project scaffold (monorepo, Docker configs, env, README). `docker compose up` left unverified (Docker not installed locally).
 
 ## Next Task
-Start Phase 0: project scaffold (`chore/project-scaffold`).
+Start Phase 1: auth & profiles (`feature/auth`).
 
 ---
 
 ## Phase 0 — Project Scaffold [`chore/project-scaffold`]
-- [ ] Create monorepo folder structure (`frontend/`, `backend/`, `bot/`, `infra/`, `docs/`)
-- [ ] `backend/app/main.py` — FastAPI app + `GET /health`
-- [ ] `backend/app/core/config.py` — pydantic-settings env loader
-- [ ] `backend/app/core/db.py` — SQLAlchemy engine/session
-- [ ] `backend/requirements.txt` — all backend dependencies pinned
-- [ ] `backend/Dockerfile` (python:3.11-slim)
-- [ ] `frontend/package.json` + Next.js 14 config files (next, tailwind, postcss, tsconfig)
-- [ ] `frontend/app/layout.tsx` + `frontend/app/page.tsx` + `globals.css` (landing page, mobile-first)
-- [ ] `frontend/Dockerfile`
-- [ ] `bot/` skeleton (`bot/bot/main.py`, `requirements.txt`, `Dockerfile`) with `/start`
-- [ ] `infra/db/init.sql` — `CREATE EXTENSION IF NOT EXISTS vector.
-- [ ] `docker-compose.yml` — `db`, `backend`, `frontend`, `bot` + healthchecks + volumes
-- [ ] `.env.example` — every variable, grouped by service
-- [ ] `README.md` — overview, local setup, ASCII architecture diagram, link to PLAN.md
-- [ ] Verify `docker compose up` (BLOCKED: Docker not installed locally — verify when available)
+- [x] Create monorepo folder structure (`frontend/`, `backend/`, `bot/`, `infra/`, `docs/`)
+- [x] `backend/app/main.py` — FastAPI app + `GET /health`
+- [x] `backend/app/core/config.py` — pydantic-settings env loader
+- [x] `backend/app/core/db.py` — SQLAlchemy engine/session
+- [x] `backend/requirements.txt` — all backend dependencies pinned
+- [x] `backend/Dockerfile` (python:3.11-slim)
+- [x] `frontend/package.json` + Next.js 14 config files (next, tailwind, postcss, tsconfig)
+- [x] `frontend/app/layout.tsx` + `frontend/app/page.tsx` + `globals.css` (landing page, mobile-first)
+- [x] `frontend/Dockerfile`
+- [x] `bot/` skeleton (`bot/bot/main.py`, `requirements.txt`, `Dockerfile`) with `/start`
+- [x] `infra/db/init.sql` — `CREATE EXTENSION IF NOT EXISTS vector;`
+- [x] `docker-compose.yml` — `db`, `backend`, `frontend`, `bot` + healthchecks + volumes
+- [x] `.env.example` — every variable, grouped by service
+- [x] `README.md` — overview, local setup, ASCII architecture diagram, link to PLAN.md
+- [!] Verify `docker compose up` — BLOCKED: Docker not installed locally; verify when available
 
 ## Phase 1 — Auth [`feature/auth`]
 - [ ] Models: `users`, `user_goals` (SQLAlchemy)
