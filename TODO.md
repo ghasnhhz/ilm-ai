@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`feature/knowledge-base`
+`feature/ai-companion`
 
 ## Last Completed Task
-Phase 2 — knowledge base & RAG ingestion (models collections/materials/material_chunks with pgvector + HNSW index; storage/ingest/embeddings services with OpenAI + opt-in dev fallback; materials + collections endpoints; Alembic 0002; `/library` page with upload/paste/collections/list). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Docker/Postgres/S3 locally).
+Phase 3 — AI companion chat (ChatSession/ChatMessage models; rag.py top-k cosine retrieval; anthropic_client.py Claude wrapper; companion.py Socratic trilingual prompt + citations; POST /chat/message, GET /chat/sessions, GET /chat/history/{session_id}; Alembic 0003_chat; `/chat` page with session sidebar, chat window, message bubbles, source-citation chips). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Docker/Postgres+pgvector/ANTHROPIC_API_KEY locally).
 
 ## Next Task
-Start Phase 3: AI companion chat (`feature/ai-companion`).
+Start Phase 4: Quiz Mode (`feature/quiz-mode`).
 
 ---
 
