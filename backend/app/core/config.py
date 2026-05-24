@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_ttl_minutes: int = 60
     refresh_token_ttl_days: int = 30
+    # Shared secret for the server-to-server OAuth bridge (NextAuth -> backend).
+    auth_bridge_secret: str = "change-me-in-env"
 
     # --- LLM ---
     anthropic_api_key: str = ""

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
+from app.api import auth
 from app.core.config import settings
 
 app = FastAPI(title=settings.app_name, version=__version__)
@@ -20,6 +21,6 @@ def health() -> dict:
     return {"status": "ok", "version": __version__, "service": settings.app_name}
 
 
-# Routers are registered here as phases land:
-# from app.api import auth, materials, chat, quiz, gaps, plan, payments, admin, telegram
-# app.include_router(auth.router)
+app.include_router(auth.router)
+# Later phases register their routers here:
+# from app.api import materials, chat, quiz, gaps, plan, payments, admin, telegram
