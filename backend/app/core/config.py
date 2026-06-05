@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     refresh_token_ttl_days: int = 30
     # Shared secret for the server-to-server OAuth bridge (NextAuth -> backend).
     auth_bridge_secret: str = "change-me-in-env"
+    # Shared secret for the server-to-server Telegram bridge (bot -> backend).
+    telegram_bot_secret: str = "change-me-in-env"
+    telegram_bot_username: str = ""
+    # Timezone reminders are scheduled in (audience is Uzbekistan / Central Asia).
+    reminder_timezone: str = "Asia/Tashkent"
 
     # --- LLM ---
     anthropic_api_key: str = ""

@@ -19,6 +19,13 @@ type QuizStats = {
   topics_covered: number;
   knowledge_score: number;
 };
+type TelegramConnection = {
+  linked: boolean;
+  current_streak: number;
+  longest_streak: number;
+  reminder: { hour: number; minute: number } | null;
+};
+type LinkToken = { token: string; deep_link: string };
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -30,6 +37,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [quizStats, setQuizStats] = useState<QuizStats | null>(null);
+  const [telegram, setTelegram] = useState<TelegramConnection | null>(null);
+  const [linkUrl, setLinkUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -38,7 +47,23 @@ export default function ProfilePage() {
     setGoalText(data.goal?.goal_text ?? "");
     setTargetDate(data.goal?.target_date ?? "");
     apiFetch<QuizStats>("/quiz/stats", { token }).then(setQuizStats).catch(() => {});
+    apiFetch<TelegramConnection>("/telegram/connection", { token })
+      .then(setTelegram)
+      .catch(() => {});
   }, [token]);
+
+  async function connectTelegram() {
+    if (!token) return;
+    try {
+      const { deep_link } = await apiFetch<LinkToken>("/telegram/link-token", {
+        token,
+        method: "POST",
+      });
+      setLinkUrl(deep_link);
+    } catch {
+      setLinkUrl(null);
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -153,6 +178,48 @@ export default function ProfilePage() {
           </button>
           {msg && <span className="text-sm text-slate-500">{msg}</span>}
         </div>
+      </section>
+
+      <section className="mt-4 rounded-xl border border-slate-200 p-5">
+        <h2 className="font-semibold">Telegram</h2>
+        {telegram?.linked ? (
+          <div className="mt-2 text-sm text-slate-600">
+            <p className="font-medium text-green-700">✓ Connected</p>
+            <p className="mt-1">🔥 Current streak: {telegram.current_streak} day(s)</p>
+            <p>🏆 Longest streak: {telegram.longest_streak} day(s)</p>
+            <p className="mt-1">
+              {telegram.reminder
+                ? `⏰ Daily reminder at ${String(telegram.reminder.hour).padStart(2, "0")}:${String(
+                    telegram.reminder.minute,
+                  ).padStart(2, "0")} (set it in the bot with /reminder)`
+                : "⏰ No reminder set — message the bot /reminder HH:MM"}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-2">
+            <p className="text-sm text-slate-600">
+              Link Telegram to quiz yourself, get daily reminders, and build a streak —
+              without opening the app.
+            </p>
+            {linkUrl ? (
+              <a
+                href={linkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block rounded-lg bg-brand px-4 py-2 font-semibold text-brand-fg"
+              >
+                Open in Telegram to finish linking
+              </a>
+            ) : (
+              <button
+                onClick={connectTelegram}
+                className="mt-3 rounded-lg border border-brand px-4 py-2 font-semibold text-brand hover:bg-brand/5"
+              >
+                Connect Telegram
+              </button>
+            )}
+          </div>
+        )}
       </section>
     </main>
   );
