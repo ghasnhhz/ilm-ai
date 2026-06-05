@@ -2,6 +2,7 @@ from app.models.chat import ChatMessage, ChatSession
 from app.models.material import Collection, Material, MaterialChunk
 from app.models.plan import LearningPlan
 from app.models.quiz import QuizAnswer, QuizQuestion, QuizSession
+from app.models.telegram import TelegramLink
 from app.models.user import User, UserGoal
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "QuizQuestion",
     "QuizAnswer",
     "LearningPlan",
+    "TelegramLink",
 ]

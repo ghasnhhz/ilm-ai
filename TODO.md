@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`feature/learning-plan`
+`feature/telegram-bot`
 
 ## Last Completed Task
-Phase 6 — Learning Plan agent (`services/plan_agent.py`: LangChain tool-calling agent — `create_tool_calling_agent` + `AgentExecutor` + `ChatAnthropic` — orchestrating four tools get_knowledge_gaps/list_topics/get_days_until_goal/generate_plan; plan JSON pulled from the generate_plan tool's return; `mark_stale` helper; `LearningPlan` model one-per-user + Alembic `0005_plan`; `schemas/plan.py`; `GET /plan` + `POST /plan/generate` in `api/plan.py` scoped to current user; stale triggers in materials upload/paste, quiz answer, auth set_goal; `/plan` timeline page with stale-nudge banner + Plan nav link across pages; added `langchain-anthropic` dep). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Postgres/ANTHROPIC_API_KEY locally).
+Phase 7 — Telegram Bot (`TelegramLink` model + Alembic `0006_telegram`; `services/telegram_service.py` link/resolve/streak `record_activity`/reminders; `api/telegram.py` `/telegram/*` — JWT link-token + connection for web, `X-Telegram-Secret`-guarded link/status/quiz-generate/quiz-answer/reminder/reminders-due for the bot, reusing `quiz_service.generate_quiz`/`grade_answer`; web quizzes also bump the streak via a no-op-if-unlinked hook in `api/quiz.py`; `create_telegram_link_token` in `core/security.py`; config + `.env.example` vars `TELEGRAM_BOT_SECRET`/`TELEGRAM_BOT_USERNAME`/`REMINDER_TIMEZONE`; bot `bot/bot/api.py` httpx client + expanded `bot/bot/main.py` with `/start <token>` linking, `/quiz` MC inline buttons, `/reminder HH:MM|off`, `/streak`, `/status`, and a 60s job_queue reminder tick; `python-telegram-bot[job-queue]`; profile "Connect Telegram" section). Frontend `npm run build` + `tsc` pass; backend + bot `py_compile` pass; runtime e2e deferred (no TELEGRAM_BOT_TOKEN/Postgres locally).
 
 ## Next Task
-Start Phase 7: Telegram Bot (`feature/telegram-bot`).
+Start Phase 8: Payments (`feature/payments`).
 
 ---
 
@@ -115,14 +115,16 @@ Start Phase 7: Telegram Bot (`feature/telegram-bot`).
 - [!] Verify (deferred, needs Docker/Postgres+ANTHROPIC_API_KEY): plan references real materials + current gaps; updates after new quiz/upload
 
 ## Phase 7 — Telegram Bot [`feature/telegram-bot`]
-- [ ] Backend: link-token endpoint, `telegram_links` model, quiz-for-bot, reminder settings
-- [ ] Alembic migration `0006_telegram`
-- [ ] Bot `/start` (link via token)
-- [ ] Bot `/quiz` (inline 5-question session → records to account)
-- [ ] Bot `/reminder HH:MM`
-- [ ] Bot `/streak`, `/status`
-- [ ] APScheduler: daily reminders + streak increment + celebration
-- [ ] Verify: link works; inline quiz records; reminder scheduled; streak increments
+- [x] Backend: link-token endpoint, `telegram_links` model, quiz-for-bot, reminder settings (`/telegram/*`, shared-secret + JWT; reuses quiz_service)
+- [x] Alembic migration `0006_telegram`
+- [x] Bot `/start` (link via token)
+- [x] Bot `/quiz` (inline 5-question MC session → records to account via streak hook)
+- [x] Bot `/reminder HH:MM` (+ `/reminder off`)
+- [x] Bot `/streak`, `/status`
+- [x] APScheduler (PTB job_queue) 60s tick: daily reminders + streak increment + milestone celebration
+- [x] Frontend: profile "Connect Telegram" section (deep link + linked status/streak)
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend + bot `py_compile` pass
+- [!] Verify (deferred, needs TELEGRAM_BOT_TOKEN + Docker/Postgres): link works; inline quiz records; reminder scheduled; streak increments
 
 ## Phase 8 — Payments [`feature/payments`]
 - [ ] Models: `subscriptions`, `payment_events`
