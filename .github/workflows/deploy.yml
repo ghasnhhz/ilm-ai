@@ -1,0 +1,27 @@
+name: Deploy
+
+# Render's GitHub integration also auto-deploys on push to main. This workflow is the
+# explicit trigger: it pings a Render Deploy Hook when the RENDER_DEPLOY_HOOK_URL secret
+# is set, and no-ops (exit 0) otherwise so forks/reviewers never see a red deploy.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-render:
+    name: Trigger Render deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render deploy hook
+        env:
+          HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL not set — skipping (Render auto-deploy may still run)."
+            exit 0
+          fi
+          echo "Triggering Render deploy..."
+          curl -fsS -X POST "$HOOK_URL"
+          echo "Deploy triggered."

@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+# Only our own tests — never discover the library tests under .venv.
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+# .venv is excluded by ruff's defaults; keep the lint scope to our code.
+extend-exclude = ["alembic/versions"]

@@ -13,9 +13,24 @@
 ---
 
 ## Current Branch
-`feature/monitoring`
+`chore/deployment`
 
 ## Last Completed Task
+Phase 10 — Deployment (backend smoke tests `backend/tests/` — health 200, config
+list-parsing, `/admin/metrics` 403 without auth — + `backend/pyproject.toml` pinning
+pytest `testpaths` and ruff scope; `.github/workflows/ci.yml` runs backend `ruff check`
++ `pytest` and frontend `lint` + `build` on push/PR; `render.yaml` Blueprint provisioning
+pgvector Postgres + backend(web, preDeploy `alembic upgrade head`) + frontend(web) +
+bot(worker) with an `ilm-secrets` env group, all secrets `sync: false`;
+`.github/workflows/deploy.yml` pings `RENDER_DEPLOY_HOOK_URL` on push to main, no-ops if
+unset; `docker-compose.prod.yml` for VPS — baked images, `restart: unless-stopped`,
+one-shot `migrate` service runs migrations before backend serves; `DEPLOYMENT.md`
+Render-primary (+ Railway + VPS) and `docs/smoke-test.md` end-to-end checklist. Verified
+locally: `pytest` (5 passed) + `ruff check` clean + all YAML parses + frontend build
+passes from Phase 9. Live Render deploy deferred — no account/secrets. **MVP complete:
+all phases 0–10 done.**
+
+## Previously Completed
 Phase 9 — Monitoring & Evaluation (`llm_logs` model + Alembic `0008_monitoring`;
 `llm/logging.py` `record_llm_call` writes one row per call from inside the llm/ layer
 using a request-scoped contextvar (`core/context.py`) for endpoint+user_id — endpoint
@@ -38,11 +53,11 @@ eval dry-run runs. DB-dependent checks (alembic upgrade, row written per call,
 `/admin/metrics` counts, 403 for non-admin) deferred — no Postgres locally (Supabase
 project paused).
 
-## Previously Completed
 Phase 8 — Payments & Premium tier (`Subscription`/`PaymentEvent`/`PaymeTransaction` models + Alembic `0007_payments`; `services/limits.py` is_premium/get_usage/check_quiz_limit/check_upload_limit/activate_premium/deactivate — free caps 3 quizzes/day + 5 uploads, enforced as HTTP 402 in quiz generate, materials upload/paste, and bot quiz; `services/stripe_service.py` Checkout + signature-verified webhook idempotent on event id; `services/payme_service.py` full JSON-RPC merchant protocol CheckPerform/Create/Perform/Cancel/CheckTransaction with Payme error codes + Basic-auth; `api/payments.py` checkout/webhooks/usage/cancel/history; config + `.env.example` STRIPE_PRICE_ID/PREMIUM_AMOUNT_UZS/PREMIUM_PRICE_LABEL/APP_BASE_URL; frontend `/pricing` + `/billing` pages, Billing nav link, 402 upgrade affordance on quiz). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; Stripe e2e (test mode) + Payme (protocol only) deferred — no keys/Postgres locally.
 
 ## Next Task
-Start Phase 10: Deployment (`chore/deployment`).
+None — MVP complete (Phases 0–10). Remaining follow-ups: expand eval set to ≥50 samples;
+run live Render deploy + smoke test once an account/secrets exist; `npm audit` cleanup.
 
 ---
 
@@ -170,12 +185,13 @@ Start Phase 10: Deployment (`chore/deployment`).
 - [!] Verify (deferred, needs Docker/Postgres): `alembic upgrade head`; each Claude/embedding call writes an `llm_logs` row; `/admin/metrics` returns real counts; non-admin → 403
 
 ## Phase 10 — Deployment [`chore/deployment`]
-- [ ] `docker-compose.prod.yml`
-- [ ] `.github/workflows/ci.yml` — backend ruff+pytest, frontend eslint+build
-- [ ] `.github/workflows/deploy.yml` — deploy on merge to main
-- [ ] `DEPLOYMENT.md` — Railway/Render/VPS guide + migrations
-- [ ] `docs/smoke-test.md` — end-to-end checklist
-- [ ] Verify: CI passes on push; deploy triggers on merge; smoke test passes
+- [x] `docker-compose.prod.yml` — baked images, restart policies, one-shot `migrate` (alembic upgrade head) before backend serves
+- [x] `.github/workflows/ci.yml` — backend `ruff check` + `pytest`, frontend `npm run lint` + `build`; backend smoke tests in `backend/tests/` + `pyproject.toml` (pytest testpaths/ruff scope)
+- [x] `.github/workflows/deploy.yml` — pings `RENDER_DEPLOY_HOOK_URL` on push to main (no-op if unset); + `render.yaml` Blueprint (pgvector db + backend/frontend/bot, preDeploy migrations, `ilm-secrets` group)
+- [x] `DEPLOYMENT.md` — Render-primary (+ Railway + VPS) guide + migrations/pgvector notes
+- [x] `docs/smoke-test.md` — end-to-end checklist
+- [x] Verify (partial): `pytest` (5 passed) + `ruff check` clean + all YAML parses locally; frontend build passes
+- [!] Verify (deferred, needs Render account/secrets): CI green on push (will run on push); live deploy triggers on merge; smoke test passes against a deployed env
 
 ---
 
