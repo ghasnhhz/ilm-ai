@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.llm import anthropic_client
 from app.models.quiz import QuizAnswer, QuizQuestion, QuizSession
 from app.services import rag
 
@@ -82,17 +82,13 @@ def generate_quiz(
         "Return only the JSON array."
     )
 
-    from anthropic import Anthropic
-
-    client = Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model=settings.anthropic_model,
-        max_tokens=2048,
+    result = anthropic_client.complete(
         system=system,
         messages=[{"role": "user", "content": user_msg}],
+        max_tokens=2048,
+        kind="quiz_generate",
     )
-    raw = "".join(block.text for block in resp.content if block.type == "text")
-    items = _extract_json(raw)
+    items = _extract_json(result.text)
 
     first_material_id = chunks[0].material_id if chunks else None
 
@@ -166,16 +162,13 @@ def grade_answer(
             f"Student answer: {user_answer}\n\n"
             "Grade and return JSON only."
         )
-        from anthropic import Anthropic
-
-        client = Anthropic(api_key=settings.anthropic_api_key)
-        resp = client.messages.create(
-            model=settings.anthropic_model,
-            max_tokens=256,
+        result = anthropic_client.complete(
             system=system,
             messages=[{"role": "user", "content": user_msg}],
+            max_tokens=256,
+            kind="quiz_grade",
         )
-        raw = "".join(block.text for block in resp.content if block.type == "text")
+        raw = result.text
         try:
             cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
             data = json.loads(cleaned)

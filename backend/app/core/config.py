@@ -63,10 +63,17 @@ class Settings(BaseSettings):
 
     # --- Monitoring ---
     sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.1
+    # Comma-separated emails allowed to hit the admin metrics endpoint.
+    admin_emails: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
 
 @lru_cache

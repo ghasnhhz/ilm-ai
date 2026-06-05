@@ -1,4 +1,5 @@
 from app.models.chat import ChatMessage, ChatSession
+from app.models.llm_log import LLMLog
 from app.models.material import Collection, Material, MaterialChunk
 from app.models.payment import PaymentEvent, PaymeTransaction, Subscription
 from app.models.plan import LearningPlan
@@ -22,4 +23,5 @@ __all__ = [
     "Subscription",
     "PaymentEvent",
     "PaymeTransaction",
+    "LLMLog",
 ]
