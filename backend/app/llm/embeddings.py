@@ -7,9 +7,11 @@ DEV_FAKE_EMBEDDINGS=true skips the model entirely for ultra-fast offline tests.
 import hashlib
 import math
 import random
+import time
 from functools import lru_cache
 
 from app.core.config import settings
+from app.llm.logging import record_llm_call
 
 
 class EmbeddingUnavailableError(RuntimeError):
@@ -38,4 +40,15 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
         return [_fake_embedding(t) for t in texts]
 
     model = _get_model()
-    return model.encode(texts, normalize_embeddings=True).tolist()
+    started = time.perf_counter()
+    vectors = model.encode(texts, normalize_embeddings=True).tolist()
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    # Local model — no token cost; we log call count via input_tokens and latency.
+    record_llm_call(
+        kind="embedding",
+        model=settings.embedding_model,
+        input_tokens=len(texts),
+        output_tokens=0,
+        latency_ms=latency_ms,
+    )
+    return vectors

@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.context import set_request_user
 from app.core.db import get_db
 from app.core.security import decode_token
 from app.models.user import User
@@ -36,4 +37,5 @@ def get_current_user(
     user = db.get(User, user_id)
     if user is None or not user.is_active:
         raise unauthorized
+    set_request_user(user.id)
     return user

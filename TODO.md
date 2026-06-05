@@ -13,13 +13,36 @@
 ---
 
 ## Current Branch
-`feature/payments`
+`feature/monitoring`
 
 ## Last Completed Task
+Phase 9 — Monitoring & Evaluation (`llm_logs` model + Alembic `0008_monitoring`;
+`llm/logging.py` `record_llm_call` writes one row per call from inside the llm/ layer
+using a request-scoped contextvar (`core/context.py`) for endpoint+user_id — endpoint
+seeded by an HTTP middleware in `main.py`, user_id by `get_current_user`; opens its own
+short-lived `SessionLocal` and swallows all errors so logging never breaks a request.
+Claude calls centralised through `anthropic_client.complete(...)` — `quiz.generate_quiz`,
+`quiz.grade_answer`, and `plan_agent._generate_plan_json` now route through it (no more
+ad-hoc `Anthropic()` clients); LangChain plan agent logged best-effort via an `on_llm_end`
+callback; `embed_texts` logs count+latency (kind=`embedding`). Sentry: backend
+`sentry_sdk.init` in `main.py` behind `SENTRY_DSN` (no-op when empty); frontend
+`@sentry/nextjs` 8.47 with `instrumentation.ts` + `sentry.{client,server,edge}.config.ts`
++ `app/global-error.tsx`, `next.config.js` wrapped in `withSentryConfig` (lazy require so
+builds work pre-install), all gated on `NEXT_PUBLIC_SENTRY_DSN`. `GET /admin/metrics`
+(DAU, quiz completions, uploads, total tokens + tokens-by-model/calls-by-kind), gated by
+`get_admin_user` against the `ADMIN_EMAILS` allow-list; day boundary in Asia/Tashkent
+(added `tzdata`). `docs/eval/`: rubric (4 dims, 1–5) + 6-sample `samples.jsonl` (en/ru/uz,
+grounded + honesty cases) + `run_eval.py` (live/dry-run) + README. Frontend `npm install` +
+`tsc --noEmit` + `npm run build` pass; backend `py_compile` + `import app.main` pass;
+eval dry-run runs. DB-dependent checks (alembic upgrade, row written per call,
+`/admin/metrics` counts, 403 for non-admin) deferred — no Postgres locally (Supabase
+project paused).
+
+## Previously Completed
 Phase 8 — Payments & Premium tier (`Subscription`/`PaymentEvent`/`PaymeTransaction` models + Alembic `0007_payments`; `services/limits.py` is_premium/get_usage/check_quiz_limit/check_upload_limit/activate_premium/deactivate — free caps 3 quizzes/day + 5 uploads, enforced as HTTP 402 in quiz generate, materials upload/paste, and bot quiz; `services/stripe_service.py` Checkout + signature-verified webhook idempotent on event id; `services/payme_service.py` full JSON-RPC merchant protocol CheckPerform/Create/Perform/Cancel/CheckTransaction with Payme error codes + Basic-auth; `api/payments.py` checkout/webhooks/usage/cancel/history; config + `.env.example` STRIPE_PRICE_ID/PREMIUM_AMOUNT_UZS/PREMIUM_PRICE_LABEL/APP_BASE_URL; frontend `/pricing` + `/billing` pages, Billing nav link, 402 upgrade affordance on quiz). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; Stripe e2e (test mode) + Payme (protocol only) deferred — no keys/Postgres locally.
 
 ## Next Task
-Start Phase 9: Monitoring (`feature/monitoring`).
+Start Phase 10: Deployment (`chore/deployment`).
 
 ---
 
@@ -138,12 +161,13 @@ Start Phase 9: Monitoring (`feature/monitoring`).
 - [!] Verify (deferred): Stripe test-mode webhook flips premium (needs keys + Postgres + Stripe CLI); Payme protocol-level only (no sandbox)
 
 ## Phase 9 — Monitoring [`feature/monitoring`]
-- [ ] Model: `llm_logs` (model, tokens, latency_ms, endpoint)
-- [ ] `llm/logging.py` — wrap all Claude + embedding calls
-- [ ] Sentry init (backend + frontend) behind `SENTRY_DSN`
-- [ ] `GET /admin/metrics` — DAU, quiz completions, uploads, total tokens
-- [ ] `docs/eval/` — rubric + ≥50 rated companion samples
-- [ ] Verify: each call logs a row; metrics return real counts; eval set complete
+- [x] Model: `llm_logs` (user_id, kind, model, input/output/total tokens, latency_ms, endpoint) + Alembic `0008_monitoring`
+- [x] `llm/logging.py` — `record_llm_call` wraps all Claude + embedding calls via request-scoped contextvar; Claude calls centralised through `anthropic_client.complete`
+- [x] Sentry init (backend `sentry_sdk.init` + frontend `@sentry/nextjs`) behind `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`
+- [x] `GET /admin/metrics` — DAU, quiz completions, uploads, total tokens (+ by-model/by-kind); `ADMIN_EMAILS` allow-list
+- [~] `docs/eval/` — rubric + runner + **starter 6 samples** (en/ru/uz, grounded + honesty); full ≥50 set is follow-up
+- [x] Verify (partial): frontend `npm install`+`tsc`+`build` pass; backend `py_compile`+`import` pass; eval dry-run runs
+- [!] Verify (deferred, needs Docker/Postgres): `alembic upgrade head`; each Claude/embedding call writes an `llm_logs` row; `/admin/metrics` returns real counts; non-admin → 403
 
 ## Phase 10 — Deployment [`chore/deployment`]
 - [ ] `docker-compose.prod.yml`
@@ -187,4 +211,7 @@ Start Phase 9: Monitoring (`feature/monitoring`).
 | S3_ACCESS_KEY | Storage access key | Backend |
 | S3_SECRET_KEY | Storage secret key | Backend |
 | SUPABASE_URL | Supabase project URL (if used) | Backend |
-| SENTRY_DSN | Error tracking | Backend + Frontend |
+| SENTRY_DSN | Backend error tracking | Backend |
+| SENTRY_TRACES_SAMPLE_RATE | Sentry perf trace sampling (0.0–1.0) | Backend |
+| NEXT_PUBLIC_SENTRY_DSN | Browser-side error tracking | Frontend |
+| ADMIN_EMAILS | Comma-separated emails allowed on /admin/metrics | Backend |

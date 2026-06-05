@@ -21,7 +21,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.llm import anthropic_client
 from app.llm.anthropic_client import AnthropicUnavailableError
+from app.llm.logging import record_llm_call
 from app.models.material import Collection, Material
 from app.models.plan import LearningPlan
 from app.models.user import UserGoal
@@ -89,8 +91,6 @@ def days_until_goal(db: Session, user_id: uuid.UUID) -> dict:
 
 def _generate_plan_json(topics: str, gaps: str, days: str) -> str:
     """Produce the structured day-by-day plan. Used by the generate_plan tool."""
-    from anthropic import Anthropic
-
     system = (
         "You are an expert learning coach. Build a realistic, day-by-day study plan "
         "from the learner's own uploaded materials, the concepts they struggle with, "
@@ -113,14 +113,13 @@ def _generate_plan_json(topics: str, gaps: str, days: str) -> str:
         "Generate the plan. If a concrete number of days is available, fit the plan "
         "within it; otherwise produce a sensible ~7-day plan. Return only the JSON object."
     )
-    client = Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model=settings.anthropic_model,
-        max_tokens=PLAN_MAX_TOKENS,
+    result = anthropic_client.complete(
         system=system,
         messages=[{"role": "user", "content": user_msg}],
+        max_tokens=PLAN_MAX_TOKENS,
+        kind="plan",
     )
-    return "".join(block.text for block in resp.content if block.type == "text")
+    return result.text
 
 
 def _build_tools(db: Session, user_id: uuid.UUID):
@@ -148,6 +147,40 @@ def _build_tools(db: Session, user_id: uuid.UUID):
         return _generate_plan_json(topics, gaps, days)
 
     return [get_knowledge_gaps, list_topics, get_days_until_goal, generate_plan]
+
+
+def _make_usage_callback():
+    """A best-effort LangChain callback that logs the agent's Claude calls.
+
+    ChatAnthropic surfaces token usage in different places across LC versions, so we
+    probe a few and fall back to zero tokens — we still capture that a call happened.
+    """
+    from langchain_core.callbacks import BaseCallbackHandler
+
+    class _UsageLogger(BaseCallbackHandler):
+        def on_llm_end(self, response, **kwargs) -> None:
+            input_tokens = output_tokens = 0
+            usage = (response.llm_output or {}).get("usage") if response.llm_output else None
+            if not usage:
+                try:
+                    msg = response.generations[0][0].message
+                    usage = getattr(msg, "usage_metadata", None) or getattr(
+                        msg, "response_metadata", {}
+                    ).get("usage")
+                except (AttributeError, IndexError):
+                    usage = None
+            if usage:
+                input_tokens = usage.get("input_tokens", 0)
+                output_tokens = usage.get("output_tokens", 0)
+            record_llm_call(
+                kind="plan_agent",
+                model=settings.anthropic_model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                latency_ms=0,
+            )
+
+    return _UsageLogger()
 
 
 def _run_agent(db: Session, user_id: uuid.UUID) -> dict:
@@ -179,7 +212,7 @@ def _run_agent(db: Session, user_id: uuid.UUID) -> dict:
     executor = AgentExecutor(
         agent=agent, tools=tools, return_intermediate_steps=True, max_iterations=8
     )
-    result = executor.invoke({})
+    result = executor.invoke({}, config={"callbacks": [_make_usage_callback()]})
 
     # Prefer the generate_plan tool's own return value over the model's final text.
     raw = None
