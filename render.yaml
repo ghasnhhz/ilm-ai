@@ -1,0 +1,122 @@
+# Render Blueprint for Ilm AI — https://render.com/docs/blueprint-spec
+#
+# Deploy: in the Render dashboard, New + → Blueprint → connect this repo. Render reads
+# this file and provisions the database + three services. Secrets are declared with
+# `sync: false`, so set them in the dashboard after the first apply (see DEPLOYMENT.md).
+#
+# pgvector: the backend's pre-deploy `alembic upgrade head` runs migration 0002, which
+# does `CREATE EXTENSION IF NOT EXISTS vector`. Render's managed Postgres allows this.
+
+databases:
+  - name: ilm-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  # ---- Backend (FastAPI) ----
+  - type: web
+    name: ilm-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    # Apply DB migrations (and create the pgvector extension) before traffic shifts.
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ilm-db
+          property: connectionString
+      - fromGroup: ilm-secrets
+      # Comma-separated allowed origins — set to the frontend URL after first deploy.
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+
+  # ---- Frontend (Next.js) ----
+  - type: web
+    name: ilm-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    envVars:
+      # NEXT_PUBLIC_* is baked at build time — set to the backend's https URL in the
+      # dashboard (e.g. https://ilm-backend.onrender.com) before the build runs.
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+
+  # ---- Telegram bot (worker, no public port) ----
+  - type: worker
+    name: ilm-bot
+    runtime: docker
+    dockerfilePath: ./bot/Dockerfile
+    dockerContext: ./bot
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ilm-db
+          property: connectionString
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_SECRET
+        sync: false
+      # Backend base URL the bot calls — set to the backend's https URL in the dashboard.
+      - key: BACKEND_INTERNAL_URL
+        sync: false
+
+# Shared backend secrets — set each value once in the dashboard (Environment → Env Groups).
+envVarGroups:
+  - name: ilm-secrets
+    envVars:
+      - key: JWT_SECRET
+        sync: false
+      - key: AUTH_BRIDGE_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-6
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false
+      - key: PAYME_MERCHANT_ID
+        sync: false
+      - key: PAYME_SECRET_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
