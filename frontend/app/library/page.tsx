@@ -47,6 +47,9 @@ export default function LibraryPage() {
           <Link href="/quiz" className="text-slate-500 hover:text-brand">
             Quiz
           </Link>
+          <Link href="/gaps" className="text-slate-500 hover:text-brand">
+            Gaps
+          </Link>
           <Link href="/profile" className="text-slate-500 hover:text-brand">
             Profile
           </Link>
