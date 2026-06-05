@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import auth, chat, collections, materials, quiz
+from app.api import auth, chat, collections, gaps, materials, quiz
 from app.core.config import settings
 
 
@@ -39,3 +39,4 @@ app.include_router(collections.router)
 app.include_router(materials.router)
 app.include_router(chat.router)
 app.include_router(quiz.router)
+app.include_router(gaps.router)

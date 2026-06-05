@@ -77,6 +77,9 @@ export default function ProfilePage() {
           <Link href="/quiz" className="text-slate-500 hover:text-brand">
             Quiz
           </Link>
+          <Link href="/gaps" className="text-slate-500 hover:text-brand">
+            Gaps
+          </Link>
           <Link href="/chat" className="text-slate-500 hover:text-brand">
             Companion
           </Link>

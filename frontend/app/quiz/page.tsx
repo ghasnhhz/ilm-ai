@@ -171,6 +171,9 @@ export default function QuizPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Quiz</h1>
         <div className="flex items-center gap-3 text-sm">
+          <Link href="/gaps" className="text-slate-500 hover:text-brand">
+            Gaps
+          </Link>
           <Link href="/chat" className="text-slate-500 hover:text-brand">
             Companion
           </Link>

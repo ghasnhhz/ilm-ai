@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`feature/ai-companion`
+`feature/gap-detection`
 
 ## Last Completed Task
-Phase 3 — AI companion chat (ChatSession/ChatMessage models; rag.py top-k cosine retrieval; anthropic_client.py Claude wrapper; companion.py Socratic trilingual prompt + citations; POST /chat/message, GET /chat/sessions, GET /chat/history/{session_id}; Alembic 0003_chat; `/chat` page with session sidebar, chat window, message bubbles, source-citation chips). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Docker/Postgres+pgvector/ANTHROPIC_API_KEY locally).
+Phase 5 — Knowledge Gap Detection (`services/gaps.py` `compute_gaps(db, user_id)` aggregating quiz answers per concept; gap = wrong ≥2× across ≥2 sessions, strong = ≥2 answers & ≥80% accuracy; maps gaps → suggested material sections; `schemas/gaps.py`; `GET /gaps` in `api/gaps.py` scoped to current user; `/gaps` frontend page with strong-vs-weak breakdown + material links + Gaps nav link across pages). No new model/migration — report computed live. Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Postgres/pgvector locally).
 
 ## Next Task
-Start Phase 4: Quiz Mode (`feature/quiz-mode`).
+Start Phase 6: Learning Plan agent (`feature/learning-plan`).
 
 ---
 
@@ -73,32 +73,35 @@ Start Phase 4: Quiz Mode (`feature/quiz-mode`).
 - [!] Verify (deferred, needs Docker/Postgres+pgvector/S3): `alembic upgrade head`; upload PDF → chunks with non-null embeddings, user-scoped; paste path; delete removes chunks + S3 object; cross-user isolation
 
 ## Phase 3 — AI Companion [`feature/ai-companion`]
-- [ ] Models: `chat_sessions`, `chat_messages` (citations JSON)
-- [ ] `services/rag.py` — embed query + top-k cosine search (user-scoped)
-- [ ] `llm/anthropic_client.py` — Claude wrapper (model from env, returns usage)
-- [ ] `services/companion.py` — Socratic trilingual system prompt + citation + outside-knowledge flag
-- [ ] `POST /chat/message`, `GET /chat/history/{session_id}`, `GET /chat/sessions`
-- [ ] Alembic migration `0003_chat`
-- [ ] Frontend `/chat`: chat window, message bubbles, source-citation chips
-- [ ] Verify: grounded answer w/ citation; honest "not in materials"; language match
+- [x] Models: `chat_sessions`, `chat_messages` (citations JSON)
+- [x] `services/rag.py` — embed query + top-k cosine search (user-scoped)
+- [x] `llm/anthropic_client.py` — Claude wrapper (model from env, returns usage)
+- [x] `services/companion.py` — Socratic trilingual system prompt + citation + outside-knowledge flag
+- [x] `POST /chat/message`, `GET /chat/history/{session_id}`, `GET /chat/sessions`
+- [x] Alembic migration `0003_chat`
+- [x] Frontend `/chat`: chat window, message bubbles, source-citation chips
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred, needs Docker/Postgres+pgvector/ANTHROPIC_API_KEY): grounded answer w/ citation; honest "not in materials"; language match
 
 ## Phase 4 — Quiz Mode [`feature/quiz-mode`]
-- [ ] Models: `quiz_sessions`, `quiz_questions`, `quiz_answers`
-- [ ] `services/quiz.py` — generation (MC/short/open) tagged with concept + source_chunk_id
-- [ ] Difficulty modes: gentle / solid / expert
-- [ ] Grading: MC exact-match; short/open via Claude w/ rationale + citation
-- [ ] `POST /quiz/generate`, `POST /quiz/answer`, `GET /quiz/results/{session_id}`
-- [ ] Alembic migration `0004_quiz`
-- [ ] Frontend `/quiz`: topic selector, difficulty picker, question display, feedback
-- [ ] Verify: grounded questions; correct/incorrect + explanation + citation; score saved
+- [x] Models: `quiz_sessions`, `quiz_questions`, `quiz_answers`
+- [x] `services/quiz.py` — generation (MC/short) tagged with concept + source_material_id
+- [x] Difficulty modes: gentle / solid / expert
+- [x] Grading: MC exact-match; short via Claude w/ rationale + explanation
+- [x] `POST /quiz/generate`, `POST /quiz/answer`, `GET /quiz/results/{session_id}` (+ `GET /quiz/sessions`, `GET /quiz/stats`)
+- [x] Alembic migration `0004_quiz`
+- [x] Frontend `/quiz`: collection selector, difficulty picker, question display, feedback, results
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred, needs Docker/Postgres+pgvector): grounded questions; correct/incorrect + explanation; score saved
 
 ## Phase 5 — Gap Detection [`feature/gap-detection`]
-- [ ] `services/gaps.py` — concept wrong ≥2× across ≥2 sessions = gap; strong logic
-- [ ] Map gaps → suggested source sections
-- [ ] `GET /gaps/{user_id}` → `{ strong, gaps, suggested_sections }`
-- [ ] Recompute after each quiz / on page load
-- [ ] Frontend `/gaps`: strong-vs-weak breakdown with material links
-- [ ] Verify: repeated wrong concept surfaces as gap; report updates with new sessions
+- [x] `services/gaps.py` — concept wrong ≥2× across ≥2 sessions = gap; strong = ≥2 answers & ≥80% accuracy
+- [x] Map gaps → suggested source sections (gap concept → `source_material_id` → material title)
+- [x] `GET /gaps` → `{ strong, gaps, suggested_sections }` (scoped to current user via JWT, not a path `user_id`)
+- [x] Recompute after each quiz / on page load (report computed live on every request; no stored snapshot)
+- [x] Frontend `/gaps`: strong-vs-weak breakdown with material links; Gaps nav link added across pages
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred, needs Docker/Postgres): repeated wrong concept surfaces as gap; report updates with new sessions
 
 ## Phase 6 — Learning Plan [`feature/learning-plan`]
 - [ ] Model: `learning_plans` (plan_json)
