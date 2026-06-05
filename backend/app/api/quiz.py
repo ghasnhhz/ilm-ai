@@ -19,9 +19,11 @@ from app.schemas.quiz import (
     QuizSessionOut,
     QuizStatsOut,
 )
+from app.services import limits
 from app.services import plan_agent
 from app.services import quiz as quiz_service
 from app.services import telegram_service
+from app.services.limits import LimitExceeded
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -32,6 +34,12 @@ def generate(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> QuizGenerateResponse:
+    try:
+        limits.check_quiz_limit(db, current_user.id)
+    except LimitExceeded as e:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(e)
+        )
     try:
         session, questions = quiz_service.generate_quiz(
             db,

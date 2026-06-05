@@ -23,8 +23,10 @@ from app.schemas.telegram import (
     ReminderRequest,
     StatusOut,
 )
+from app.services import limits
 from app.services import quiz as quiz_service
 from app.services import telegram_service
+from app.services.limits import LimitExceeded
 from app.services.telegram_service import LinkError
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
@@ -109,6 +111,10 @@ def bot_quiz_generate(
         user_id = telegram_service.resolve_user_id(db, payload.chat_id)
     except LinkError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    try:
+        limits.check_quiz_limit(db, user_id)
+    except LimitExceeded as e:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(e))
     try:
         _session, questions = quiz_service.generate_quiz(db, user_id, None, "solid", 5)
     except ValueError as e:

@@ -4,7 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import auth, chat, collections, gaps, materials, plan, quiz, telegram
+from app.api import (
+    auth,
+    chat,
+    collections,
+    gaps,
+    materials,
+    payments,
+    plan,
+    quiz,
+    telegram,
+)
 from app.core.config import settings
 
 
@@ -42,3 +52,4 @@ app.include_router(quiz.router)
 app.include_router(gaps.router)
 app.include_router(plan.router)
 app.include_router(telegram.router)
+app.include_router(payments.router)

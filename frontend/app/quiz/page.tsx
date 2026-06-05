@@ -307,7 +307,16 @@ function SetupPhase({
         </div>
       </section>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="text-sm text-red-600">
+          <p>{error}</p>
+          {/Upgrade|premium/i.test(error) && (
+            <Link href="/pricing" className="font-semibold text-brand underline">
+              View pricing →
+            </Link>
+          )}
+        </div>
+      )}
 
       <button
         onClick={onStart}

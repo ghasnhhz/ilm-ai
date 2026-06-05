@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`feature/telegram-bot`
+`feature/payments`
 
 ## Last Completed Task
-Phase 7 — Telegram Bot (`TelegramLink` model + Alembic `0006_telegram`; `services/telegram_service.py` link/resolve/streak `record_activity`/reminders; `api/telegram.py` `/telegram/*` — JWT link-token + connection for web, `X-Telegram-Secret`-guarded link/status/quiz-generate/quiz-answer/reminder/reminders-due for the bot, reusing `quiz_service.generate_quiz`/`grade_answer`; web quizzes also bump the streak via a no-op-if-unlinked hook in `api/quiz.py`; `create_telegram_link_token` in `core/security.py`; config + `.env.example` vars `TELEGRAM_BOT_SECRET`/`TELEGRAM_BOT_USERNAME`/`REMINDER_TIMEZONE`; bot `bot/bot/api.py` httpx client + expanded `bot/bot/main.py` with `/start <token>` linking, `/quiz` MC inline buttons, `/reminder HH:MM|off`, `/streak`, `/status`, and a 60s job_queue reminder tick; `python-telegram-bot[job-queue]`; profile "Connect Telegram" section). Frontend `npm run build` + `tsc` pass; backend + bot `py_compile` pass; runtime e2e deferred (no TELEGRAM_BOT_TOKEN/Postgres locally).
+Phase 8 — Payments & Premium tier (`Subscription`/`PaymentEvent`/`PaymeTransaction` models + Alembic `0007_payments`; `services/limits.py` is_premium/get_usage/check_quiz_limit/check_upload_limit/activate_premium/deactivate — free caps 3 quizzes/day + 5 uploads, enforced as HTTP 402 in quiz generate, materials upload/paste, and bot quiz; `services/stripe_service.py` Checkout + signature-verified webhook idempotent on event id; `services/payme_service.py` full JSON-RPC merchant protocol CheckPerform/Create/Perform/Cancel/CheckTransaction with Payme error codes + Basic-auth; `api/payments.py` checkout/webhooks/usage/cancel/history; config + `.env.example` STRIPE_PRICE_ID/PREMIUM_AMOUNT_UZS/PREMIUM_PRICE_LABEL/APP_BASE_URL; frontend `/pricing` + `/billing` pages, Billing nav link, 402 upgrade affordance on quiz). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; Stripe e2e (test mode) + Payme (protocol only) deferred — no keys/Postgres locally.
 
 ## Next Task
-Start Phase 8: Payments (`feature/payments`).
+Start Phase 9: Monitoring (`feature/monitoring`).
 
 ---
 
@@ -127,14 +127,15 @@ Start Phase 8: Payments (`feature/payments`).
 - [!] Verify (deferred, needs TELEGRAM_BOT_TOKEN + Docker/Postgres): link works; inline quiz records; reminder scheduled; streak increments
 
 ## Phase 8 — Payments [`feature/payments`]
-- [ ] Models: `subscriptions`, `payment_events`
-- [ ] `POST /payments/stripe/checkout`
-- [ ] `POST /payments/stripe/webhook` (signature verify → activate)
-- [ ] `POST /payments/payme/webhook` (JSON-RPC: CheckPerform/Create/Perform/Cancel/CheckTransaction)
-- [ ] `services/limits.py` — free: 3 quizzes/day + 5 uploads; premium: unlimited + priority
-- [ ] Alembic migration `0007_payments`
-- [ ] Frontend `/pricing` + `/billing` (upgrade/cancel/history)
-- [ ] Verify: free limits enforced; test webhook flips premium; Payme protocol responses
+- [x] Models: `subscriptions`, `payment_events` (+ `payme_transactions` for the Payme state machine)
+- [x] `POST /payments/stripe/checkout`
+- [x] `POST /payments/stripe/webhook` (signature verify → activate; idempotent on event id)
+- [x] `POST /payments/payme/webhook` (JSON-RPC: CheckPerform/Create/Perform/Cancel/CheckTransaction + Basic-auth + error codes)
+- [x] `services/limits.py` — free: 3 quizzes/day + 5 uploads; premium: unlimited (enforced as HTTP 402 in quiz/upload/bot-quiz)
+- [x] Alembic migration `0007_payments`
+- [x] Frontend `/pricing` + `/billing` (upgrade/cancel/history + usage meters; Billing nav link; 402 upgrade affordance)
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred): Stripe test-mode webhook flips premium (needs keys + Postgres + Stripe CLI); Payme protocol-level only (no sandbox)
 
 ## Phase 9 — Monitoring [`feature/monitoring`]
 - [ ] Model: `llm_logs` (model, tokens, latency_ms, endpoint)

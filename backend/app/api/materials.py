@@ -9,7 +9,8 @@ from app.core.db import get_db
 from app.models.material import Collection, Material, MaterialChunk
 from app.models.user import User
 from app.schemas.material import ChunkPreview, MaterialDetail, MaterialOut, PasteRequest
-from app.services import plan_agent, storage
+from app.services import limits, plan_agent, storage
+from app.services.limits import LimitExceeded
 from app.services.embeddings import embed_chunks
 from app.services.ingest import SUPPORTED_TYPES, chunk_text, extract_text
 
@@ -117,6 +118,11 @@ def upload_material(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MaterialOut:
+    try:
+        limits.check_upload_limit(db, current_user.id)
+    except LimitExceeded as e:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(e))
+
     filename = file.filename or "upload"
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext not in SUPPORTED_TYPES:
@@ -151,6 +157,11 @@ def paste_material(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MaterialOut:
+    try:
+        limits.check_upload_limit(db, current_user.id)
+    except LimitExceeded as e:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(e))
+
     _validate_collection(db, current_user, payload.collection_id)
 
     material = _ingest(
