@@ -9,7 +9,7 @@ from app.core.db import get_db
 from app.models.material import Collection, Material, MaterialChunk
 from app.models.user import User
 from app.schemas.material import ChunkPreview, MaterialDetail, MaterialOut, PasteRequest
-from app.services import storage
+from app.services import plan_agent, storage
 from app.services.embeddings import embed_chunks
 from app.services.ingest import SUPPORTED_TYPES, chunk_text, extract_text
 
@@ -104,6 +104,8 @@ def _ingest(
 
     db.commit()
     db.refresh(material)
+    if material.status == "ready":
+        plan_agent.mark_stale(db, user.id)
     return material
 
 
