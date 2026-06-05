@@ -52,8 +52,14 @@ class Settings(BaseSettings):
     # --- Payments ---
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
     payme_merchant_id: str = ""
     payme_secret_key: str = ""
+    # Premium price in UZS (whole soʻm); Payme expects the amount in tiyin (×100).
+    premium_amount_uzs: int = 50000
+    premium_price_label: str = "$4.99/mo"
+    # Base URL of the frontend, used for Stripe success/cancel redirects.
+    app_base_url: str = "http://localhost:3000"
 
     # --- Monitoring ---
     sentry_dsn: str = ""

@@ -111,6 +111,9 @@ export default function ProfilePage() {
           <Link href="/chat" className="text-slate-500 hover:text-brand">
             Companion
           </Link>
+          <Link href="/billing" className="text-slate-500 hover:text-brand">
+            Billing
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="text-slate-500 hover:text-brand"
