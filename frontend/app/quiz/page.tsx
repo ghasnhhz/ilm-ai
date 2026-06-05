@@ -174,6 +174,9 @@ export default function QuizPage() {
           <Link href="/gaps" className="text-slate-500 hover:text-brand">
             Gaps
           </Link>
+          <Link href="/plan" className="text-slate-500 hover:text-brand">
+            Plan
+          </Link>
           <Link href="/chat" className="text-slate-500 hover:text-brand">
             Companion
           </Link>

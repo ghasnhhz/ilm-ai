@@ -98,6 +98,9 @@ export default function ChatPage() {
           <Link href="/gaps" className="text-slate-500 hover:text-brand">
             Gaps
           </Link>
+          <Link href="/plan" className="text-slate-500 hover:text-brand">
+            Plan
+          </Link>
           <Link href="/library" className="text-slate-500 hover:text-brand">
             Library
           </Link>

@@ -75,6 +75,9 @@ export default function GapsPage() {
           <Link href="/quiz" className="text-slate-500 hover:text-brand">
             Quiz
           </Link>
+          <Link href="/plan" className="text-slate-500 hover:text-brand">
+            Plan
+          </Link>
           <Link href="/chat" className="text-slate-500 hover:text-brand">
             Companion
           </Link>

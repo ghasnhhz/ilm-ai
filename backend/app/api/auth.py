@@ -22,6 +22,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserOut,
 )
+from app.services import plan_agent
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -117,6 +118,8 @@ def set_goal(
     db.add(goal)
     db.commit()
     db.refresh(current_user)
+    # A changed goal/target date makes any existing learning plan outdated.
+    plan_agent.mark_stale(db, current_user.id)
     return _user_out(current_user)
 
 

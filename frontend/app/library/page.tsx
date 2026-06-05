@@ -50,6 +50,9 @@ export default function LibraryPage() {
           <Link href="/gaps" className="text-slate-500 hover:text-brand">
             Gaps
           </Link>
+          <Link href="/plan" className="text-slate-500 hover:text-brand">
+            Plan
+          </Link>
           <Link href="/profile" className="text-slate-500 hover:text-brand">
             Profile
           </Link>

@@ -13,13 +13,13 @@
 ---
 
 ## Current Branch
-`feature/gap-detection`
+`feature/learning-plan`
 
 ## Last Completed Task
-Phase 5 — Knowledge Gap Detection (`services/gaps.py` `compute_gaps(db, user_id)` aggregating quiz answers per concept; gap = wrong ≥2× across ≥2 sessions, strong = ≥2 answers & ≥80% accuracy; maps gaps → suggested material sections; `schemas/gaps.py`; `GET /gaps` in `api/gaps.py` scoped to current user; `/gaps` frontend page with strong-vs-weak breakdown + material links + Gaps nav link across pages). No new model/migration — report computed live. Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Postgres/pgvector locally).
+Phase 6 — Learning Plan agent (`services/plan_agent.py`: LangChain tool-calling agent — `create_tool_calling_agent` + `AgentExecutor` + `ChatAnthropic` — orchestrating four tools get_knowledge_gaps/list_topics/get_days_until_goal/generate_plan; plan JSON pulled from the generate_plan tool's return; `mark_stale` helper; `LearningPlan` model one-per-user + Alembic `0005_plan`; `schemas/plan.py`; `GET /plan` + `POST /plan/generate` in `api/plan.py` scoped to current user; stale triggers in materials upload/paste, quiz answer, auth set_goal; `/plan` timeline page with stale-nudge banner + Plan nav link across pages; added `langchain-anthropic` dep). Frontend `npm run build` + `tsc` pass; backend `py_compile` passes; runtime e2e deferred (no Postgres/ANTHROPIC_API_KEY locally).
 
 ## Next Task
-Start Phase 6: Learning Plan agent (`feature/learning-plan`).
+Start Phase 7: Telegram Bot (`feature/telegram-bot`).
 
 ---
 
@@ -104,14 +104,15 @@ Start Phase 6: Learning Plan agent (`feature/learning-plan`).
 - [!] Verify (deferred, needs Docker/Postgres): repeated wrong concept surfaces as gap; report updates with new sessions
 
 ## Phase 6 — Learning Plan [`feature/learning-plan`]
-- [ ] Model: `learning_plans` (plan_json)
-- [ ] Agent tools: `get_knowledge_gaps`, `list_topics`, `get_days_until_goal`, `generate_plan`
-- [ ] `services/plan_agent.py` — LangChain agent composing tools → day-by-day plan
-- [ ] `POST /plan/generate`, `GET /plan/{user_id}`
-- [ ] Regenerate on: new upload / quiz completion / goal date change
-- [ ] Alembic migration `0005_plan`
-- [ ] Frontend `/plan`: timeline/calendar view mapping materials to days
-- [ ] Verify: plan references real materials + current gaps; updates after new quiz/upload
+- [x] Model: `learning_plans` (plan_json, stale flag, goal snapshot; one row per user)
+- [x] Agent tools: `get_knowledge_gaps`, `list_topics`, `get_days_until_goal`, `generate_plan`
+- [x] `services/plan_agent.py` — LangChain tool-calling agent composing tools → day-by-day plan
+- [x] `POST /plan/generate`, `GET /plan` (scoped to current user via JWT, not a path `user_id`)
+- [x] Regenerate on: new upload / quiz completion / goal date change (stale flag flipped; on-demand regenerate via UI nudge)
+- [x] Alembic migration `0005_plan`
+- [x] Frontend `/plan`: timeline view mapping materials to days + stale banner
+- [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend `py_compile` passes
+- [!] Verify (deferred, needs Docker/Postgres+ANTHROPIC_API_KEY): plan references real materials + current gaps; updates after new quiz/upload
 
 ## Phase 7 — Telegram Bot [`feature/telegram-bot`]
 - [ ] Backend: link-token endpoint, `telegram_links` model, quiz-for-bot, reminder settings

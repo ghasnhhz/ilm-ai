@@ -19,6 +19,7 @@ from app.schemas.quiz import (
     QuizSessionOut,
     QuizStatsOut,
 )
+from app.services import plan_agent
 from app.services import quiz as quiz_service
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
@@ -66,6 +67,8 @@ def answer_question(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    # Quiz results feed gap detection, so the stored learning plan may be outdated.
+    plan_agent.mark_stale(db, current_user.id)
     return QuizAnswerOut(
         is_correct=result.is_correct,
         explanation=result.explanation,
