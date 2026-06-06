@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,6 +26,8 @@ from app.services import quiz as quiz_service
 from app.services import telegram_service
 from app.services.limits import LimitExceeded
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
 
@@ -50,10 +53,11 @@ def generate(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
+    except Exception:
+        logger.exception("Quiz generation failed for user %s", current_user.id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate questions: {e}",
+            detail="Could not generate questions right now. Please try again.",
         )
     return QuizGenerateResponse(
         session_id=session.id,

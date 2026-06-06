@@ -1,4 +1,38 @@
+import pytest
+from pydantic import ValidationError
+
 from app.core.config import Settings
+
+
+def test_production_rejects_default_secret():
+    with pytest.raises(ValidationError, match="auth_bridge_secret"):
+        Settings(
+            environment="production",
+            jwt_secret="real-jwt",
+            auth_bridge_secret="change-me-in-env",
+            telegram_bot_secret="real-tg",
+        )
+
+
+def test_production_allows_overridden_secrets():
+    s = Settings(
+        environment="production",
+        jwt_secret="real-jwt",
+        auth_bridge_secret="real-bridge",
+        telegram_bot_secret="real-tg",
+    )
+    assert s.environment == "production"
+
+
+def test_development_allows_default_secrets():
+    # The convenient defaults must not block local/dev startup.
+    s = Settings(
+        environment="development",
+        jwt_secret="change-me-in-env",
+        auth_bridge_secret="change-me-in-env",
+        telegram_bot_secret="change-me-in-env",
+    )
+    assert s.jwt_secret == "change-me-in-env"
 
 
 def test_admin_email_list_parses_and_lowercases():

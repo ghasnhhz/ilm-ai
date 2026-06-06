@@ -54,6 +54,10 @@ type QuizResultsOut = {
 
 type Phase = "setup" | "questions" | "results";
 
+// MC options are sent to the backend as a letter (A, B, C, …) derived from the
+// option's position, so selection never depends on the option text being prefixed.
+const optionLetter = (idx: number) => String.fromCharCode(65 + idx);
+
 const DIFFICULTIES = [
   { value: "gentle", label: "Gentle", desc: "Definitions and key facts" },
   { value: "solid", label: "Solid", desc: "Mechanisms and relationships" },
@@ -75,7 +79,9 @@ export default function QuizPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<string>("");
+  // Track the chosen option by index (not by parsing the option text). The backend
+  // grades MC answers by letter (A/B/C/D), which we derive from the index below.
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [shortAnswer, setShortAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<QuizAnswerOut | null>(null);
@@ -100,12 +106,13 @@ export default function QuizPage() {
           difficulty,
           n_questions: nQuestions,
         },
+        timeoutMs: 90_000, // generation calls the LLM and can run long
       });
       setSessionId(data.session_id);
       setQuestions(data.questions);
       setCurrentIdx(0);
       setFeedback(null);
-      setSelectedOption("");
+      setSelectedIdx(null);
       setShortAnswer("");
       setPhase("questions");
     } catch (e) {
@@ -121,7 +128,12 @@ export default function QuizPage() {
   const submitAnswer = useCallback(async () => {
     const q = questions[currentIdx];
     if (!token || !q) return;
-    const userAnswer = q.question_type === "mc" ? selectedOption : shortAnswer;
+    const userAnswer =
+      q.question_type === "mc"
+        ? selectedIdx === null
+          ? ""
+          : optionLetter(selectedIdx)
+        : shortAnswer;
     if (!userAnswer.trim()) return;
 
     setSubmitting(true);
@@ -137,7 +149,7 @@ export default function QuizPage() {
       setError(e instanceof ApiError ? e.message : "Failed to submit answer.");
     }
     setSubmitting(false);
-  }, [token, questions, currentIdx, selectedOption, shortAnswer]);
+  }, [token, questions, currentIdx, selectedIdx, shortAnswer]);
 
   const nextQuestion = useCallback(async () => {
     const nextIdx = currentIdx + 1;
@@ -154,7 +166,7 @@ export default function QuizPage() {
     } else {
       setCurrentIdx(nextIdx);
       setFeedback(null);
-      setSelectedOption("");
+      setSelectedIdx(null);
       setShortAnswer("");
     }
   }, [currentIdx, questions.length, token, sessionId]);
@@ -195,8 +207,8 @@ export default function QuizPage() {
         <QuestionPhase
           questions={questions}
           currentIdx={currentIdx}
-          selectedOption={selectedOption}
-          setSelectedOption={setSelectedOption}
+          selectedIdx={selectedIdx}
+          setSelectedIdx={setSelectedIdx}
           shortAnswer={shortAnswer}
           setShortAnswer={setShortAnswer}
           feedback={feedback}
@@ -322,8 +334,8 @@ function SetupPhase({
 function QuestionPhase({
   questions,
   currentIdx,
-  selectedOption,
-  setSelectedOption,
+  selectedIdx,
+  setSelectedIdx,
   shortAnswer,
   setShortAnswer,
   feedback,
@@ -334,8 +346,8 @@ function QuestionPhase({
 }: {
   questions: QuizQuestion[];
   currentIdx: number;
-  selectedOption: string;
-  setSelectedOption: (v: string) => void;
+  selectedIdx: number | null;
+  setSelectedIdx: (v: number | null) => void;
   shortAnswer: string;
   setShortAnswer: (v: string) => void;
   feedback: QuizAnswerOut | null;
@@ -371,14 +383,14 @@ function QuestionPhase({
 
         {q.question_type === "mc" && !feedback && (
           <div className="mt-4 space-y-2">
-            {q.options.map((opt) => (
+            {q.options.map((opt, idx) => (
               <button
-                key={opt}
-                onClick={() => setSelectedOption(opt[0])}
-                aria-pressed={selectedOption === opt[0]}
+                key={idx}
+                onClick={() => setSelectedIdx(idx)}
+                aria-pressed={selectedIdx === idx}
                 className={cn(
                   "w-full rounded-md border px-4 py-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  selectedOption === opt[0]
+                  selectedIdx === idx
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-hairline text-ink hover:border-primary",
                 )}
@@ -437,7 +449,9 @@ function QuestionPhase({
             onClick={onSubmit}
             loading={submitting}
             disabled={
-              q.question_type === "mc" ? !selectedOption : !shortAnswer.trim()
+              q.question_type === "mc"
+                ? selectedIdx === null
+                : !shortAnswer.trim()
             }
           >
             Submit
