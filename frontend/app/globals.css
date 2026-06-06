@@ -2,8 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens — see docs/design-system.md and tailwind.config.ts.
+   Exposed as CSS variables for cases that can't use Tailwind utilities. */
 :root {
-  color-scheme: light dark;
+  --color-primary: #0e7490;
+  --color-primary-hover: #0b5e74;
+  --color-primary-fg: #ecfeff;
+  --color-accent: #d97706;
+  --color-text: #1c2a33;
+  --color-text-muted: #5b6b73;
+  --color-bg: #fbf8f2;
+  --color-surface: #ffffff;
+  --color-muted: #ece5d8;
+  --color-border: #e3dbcd;
+  --color-success: #15803d;
+  --color-warn: #b45309;
+  --color-danger: #b91c1c;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(28, 42, 51, 0.06), 0 1px 3px rgba(28, 42, 51, 0.08);
+  --shadow-md: 0 4px 12px rgba(28, 42, 51, 0.1);
 }
 
 html,
@@ -13,5 +32,16 @@ body {
 }
 
 body {
-  @apply bg-white text-slate-900 antialiased;
+  @apply bg-page text-ink antialiased;
+}
+
+/* Respect users who prefer reduced motion — disable entrance animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
