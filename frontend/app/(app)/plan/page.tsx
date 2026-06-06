@@ -67,6 +67,7 @@ export default function PlanPage() {
       const res = await apiFetch<LearningPlanOut>("/plan/generate", {
         token,
         method: "POST",
+        timeoutMs: 120_000, // the plan agent makes multiple LLM tool calls
       });
       setData(res);
     } catch (e) {
