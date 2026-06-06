@@ -15,19 +15,22 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useT } from "@/lib/i18n";
+import type { TKey } from "@/lib/i18n/dictionaries/en";
 import { cn } from "@/lib/cn";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavItem = { href: string; labelKey: TKey; icon: LucideIcon };
 
 // Single source of truth for navigation — replaces the per-page hand-rolled
 // header link lists that were inconsistent across every surface.
 const NAV: NavItem[] = [
-  { href: "/library", label: "Library", icon: Library },
-  { href: "/chat", label: "Companion", icon: MessageSquare },
-  { href: "/quiz", label: "Quiz", icon: GraduationCap },
-  { href: "/gaps", label: "Gaps", icon: Target },
-  { href: "/plan", label: "Plan", icon: CalendarDays },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/library", labelKey: "nav.library", icon: Library },
+  { href: "/chat", labelKey: "nav.chat", icon: MessageSquare },
+  { href: "/quiz", labelKey: "nav.quiz", icon: GraduationCap },
+  { href: "/gaps", labelKey: "nav.gaps", icon: Target },
+  { href: "/plan", labelKey: "nav.plan", icon: CalendarDays },
+  { href: "/profile", labelKey: "nav.profile", icon: User },
 ];
 
 function useIsActive() {
@@ -44,6 +47,7 @@ function useIsActive() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
   const isActive = useIsActive();
+  const { t } = useT();
   const authed = status === "authenticated";
 
   return (
@@ -62,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-label="Primary"
               className="hidden items-center gap-1 md:flex"
             >
-              {NAV.map(({ href, label }) => (
+              {NAV.map(({ href, labelKey }) => (
                 <Link
                   key={href}
                   href={href}
@@ -74,13 +78,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       : "text-muted-fg hover:text-ink",
                   )}
                 >
-                  {label}
+                  {t(labelKey)}
                 </Link>
               ))}
             </nav>
           )}
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {authed ? (
               <Button
                 variant="ghost"
@@ -88,15 +93,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={() => signOut({ callbackUrl: "/" })}
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Log out</span>
+                <span className="hidden sm:inline">{t("action.logout")}</span>
               </Button>
             ) : (
               <>
                 <Button href="/login" variant="ghost" size="sm">
-                  Log in
+                  {t("action.login")}
                 </Button>
                 <Button href="/signup" size="sm">
-                  Sign up
+                  {t("action.signup")}
                 </Button>
               </>
             )}
@@ -110,10 +115,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {authed && (
         <nav
-          aria-label="Primary"
+          aria-label="Primary mobile"
           className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-hairline bg-page md:hidden"
         >
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {NAV.map(({ href, labelKey, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -124,7 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               )}
             >
               <Icon className="h-5 w-5" aria-hidden="true" />
-              {label}
+              {t(labelKey)}
             </Link>
           ))}
         </nav>

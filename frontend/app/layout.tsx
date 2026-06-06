@@ -19,6 +19,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // lang starts at "en" (keeps this layout static); LangProvider restores the
+  // saved locale and updates document.documentElement.lang after hydration.
   return (
     <html lang="en">
       <body>
