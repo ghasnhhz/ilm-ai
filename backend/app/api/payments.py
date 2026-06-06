@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,6 +11,8 @@ from app.models.user import User
 from app.schemas.payment import CheckoutOut, PaymentEventOut, UsageOut
 from app.services import limits, payme_service, stripe_service
 from app.services.stripe_service import StripeUnavailableError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -74,9 +78,13 @@ async def stripe_webhook(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
         )
-    except Exception as e:
-        # Bad signature / malformed payload → 400 so Stripe retries.
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception:
+        # Bad signature / malformed payload → 400 so Stripe retries. Don't echo the raw
+        # exception text back to the caller; log it for ourselves instead.
+        logger.exception("Stripe webhook processing failed")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid webhook payload"
+        )
 
 
 # --- Payme (JSON-RPC) --------------------------------------------------------
