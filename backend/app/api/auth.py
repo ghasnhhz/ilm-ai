@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.db import get_db
+from app.core.ratelimit import login_limiter
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -59,7 +60,17 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def login(
+    payload: LoginRequest, request: Request, db: Session = Depends(get_db)
+) -> TokenResponse:
+    # Throttle per (client IP, email) to blunt password brute-forcing.
+    client_ip = request.client.host if request.client else "unknown"
+    if not login_limiter.allow(f"{client_ip}:{payload.email.lower()}"):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts — please wait a moment and try again.",
+        )
+
     user = db.scalar(select(User).where(User.email == payload.email))
     if user is None or not user.hashed_password or not verify_password(
         payload.password, user.hashed_password
