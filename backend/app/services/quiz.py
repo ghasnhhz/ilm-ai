@@ -132,6 +132,15 @@ class GradeResult:
     correct_answer: str
 
 
+def mc_is_correct(user_answer: str, correct_answer: str) -> bool:
+    """Compare a multiple-choice answer by its leading letter (A/B/C/D), case-insensitively.
+
+    The frontend sends the chosen option's letter (derived from its index), and the
+    stored ``correct_answer`` is a single letter, so grading keys off the first character.
+    """
+    return user_answer.strip().upper()[:1] == correct_answer.strip().upper()[:1]
+
+
 def grade_answer(
     db: Session,
     user_id: uuid.UUID,
@@ -143,9 +152,7 @@ def grade_answer(
         raise ValueError("Question not found")
 
     if q.question_type == "mc":
-        user_letter = user_answer.strip().upper()[:1]
-        correct_letter = q.correct_answer.strip().upper()[:1]
-        is_correct = user_letter == correct_letter
+        is_correct = mc_is_correct(user_answer, q.correct_answer)
         explanation = q.explanation or (
             "Correct!" if is_correct else f"The correct answer is {q.correct_answer}."
         )

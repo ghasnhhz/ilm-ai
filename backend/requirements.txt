@@ -17,7 +17,9 @@ pgvector==0.3.6
 
 # --- Auth ---
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+# bcrypt is used directly (see app/core/security.py); passlib was dropped because it is
+# unmaintained and its backend self-test crashes against bcrypt >= 4.1.
+bcrypt==5.0.0
 
 # --- LLM / RAG ---
 anthropic==0.42.0
