@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { Check } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { ApiError, apiFetch } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/cn";
 
 type Usage = {
   tier: string;
@@ -28,6 +31,31 @@ const PREMIUM_FEATURES = [
   "Priority response speed",
   "Everything in Free",
 ];
+
+function FeatureList({
+  features,
+  accent,
+}: {
+  features: string[];
+  accent?: boolean;
+}) {
+  return (
+    <ul className="mt-4 space-y-2 text-sm text-muted-fg">
+      {features.map((f) => (
+        <li key={f} className="flex gap-2">
+          <Check
+            className={cn(
+              "mt-0.5 h-4 w-4 shrink-0",
+              accent ? "text-primary" : "text-muted-fg",
+            )}
+            aria-hidden="true"
+          />
+          {f}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function PricingPage() {
   const { data: session } = useSession();
@@ -68,82 +96,49 @@ export default function PricingPage() {
   const priceLabel = usage?.price_label ?? "$4.99/mo";
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Pricing</h1>
-        <div className="flex items-center gap-3 text-sm">
-          {token && (
-            <Link href="/billing" className="text-slate-500 hover:text-brand">
-              Billing
-            </Link>
-          )}
-          <Link href="/profile" className="text-slate-500 hover:text-brand">
-            Profile
-          </Link>
-        </div>
-      </header>
-
-      <p className="mt-2 text-sm text-slate-500">
+    <div>
+      <h1 className="text-2xl font-bold text-ink">Pricing</h1>
+      <p className="mt-1 text-sm text-muted-fg">
         Learn for free, or go unlimited with premium.
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <section className="rounded-xl border border-slate-200 p-5">
-          <h2 className="font-semibold">Free</h2>
-          <p className="mt-1 text-2xl font-bold">$0</p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-600">
-            {FREE_FEATURES.map((f) => (
-              <li key={f} className="flex gap-2">
-                <span className="text-slate-400">•</span>
-                {f}
-              </li>
-            ))}
-          </ul>
+        <Card>
+          <CardTitle>Free</CardTitle>
+          <p className="mt-1 text-2xl font-bold text-ink">$0</p>
+          <FeatureList features={FREE_FEATURES} />
           {!isPremium && (
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-fg">
               Your current plan
             </p>
           )}
-        </section>
+        </Card>
 
-        <section className="rounded-xl border-2 border-brand p-5">
-          <h2 className="font-semibold text-brand">Premium</h2>
-          <p className="mt-1 text-2xl font-bold">{priceLabel}</p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-600">
-            {PREMIUM_FEATURES.map((f) => (
-              <li key={f} className="flex gap-2">
-                <span className="text-brand">✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
+        <Card className="border-2 border-primary">
+          <CardTitle className="text-primary">Premium</CardTitle>
+          <p className="mt-1 text-2xl font-bold text-ink">{priceLabel}</p>
+          <FeatureList features={PREMIUM_FEATURES} accent />
           {isPremium ? (
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-green-600">
-              ✓ Active
+            <p className="mt-4 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-success">
+              <Check className="h-4 w-4" aria-hidden="true" />
+              Active
             </p>
           ) : token ? (
-            <button
-              onClick={upgrade}
-              disabled={loading}
-              className="mt-4 w-full rounded-xl bg-brand py-2.5 font-semibold text-brand-fg disabled:opacity-60"
-            >
-              {loading ? "Redirecting…" : "Upgrade with card"}
-            </button>
+            <Button className="mt-4 w-full" onClick={upgrade} loading={loading}>
+              Upgrade with card
+            </Button>
           ) : (
-            <Link
-              href="/login"
-              className="mt-4 block rounded-xl bg-brand py-2.5 text-center font-semibold text-brand-fg"
-            >
+            <Button href="/login" className="mt-4 w-full">
               Log in to upgrade
-            </Link>
+            </Button>
           )}
-          <p className="mt-2 text-center text-xs text-slate-400">
+          <p className="mt-2 text-center text-xs text-muted-fg">
             Card via Stripe · Payme available in Uzbekistan
           </p>
-        </section>
+        </Card>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-    </main>
+      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+    </div>
   );
 }

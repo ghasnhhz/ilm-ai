@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { ApiError, apiFetch } from "@/lib/api";
@@ -12,6 +12,9 @@ import type {
   MessageResponse,
 } from "@/types/api";
 import { ChatWindow } from "@/components/chat-window";
+import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/ui/skeleton";
+import { cn } from "@/lib/cn";
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
@@ -84,31 +87,18 @@ export default function ChatPage() {
   }
 
   if (status === "loading") {
-    return <p className="p-6 text-slate-500">Loading…</p>;
+    return <Loading />;
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-3xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Companion</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/quiz" className="text-slate-500 hover:text-brand">
-            Quiz
-          </Link>
-          <Link href="/gaps" className="text-slate-500 hover:text-brand">
-            Gaps
-          </Link>
-          <Link href="/plan" className="text-slate-500 hover:text-brand">
-            Plan
-          </Link>
-          <Link href="/library" className="text-slate-500 hover:text-brand">
-            Library
-          </Link>
-          <button onClick={newChat} className="text-slate-500 hover:text-brand">
-            New chat
-          </button>
-        </div>
-      </header>
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-ink">Companion</h1>
+        <Button variant="secondary" size="sm" onClick={newChat}>
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          New chat
+        </Button>
+      </div>
 
       {sessions.length > 0 && (
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -116,11 +106,12 @@ export default function ChatPage() {
             <button
               key={s.id}
               onClick={() => openSession(s.id)}
-              className={`shrink-0 rounded-full border px-3 py-1 text-xs ${
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 activeId === s.id
-                  ? "border-brand bg-brand/5 text-brand"
-                  : "border-slate-200 text-slate-600 hover:border-brand"
-              }`}
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-hairline text-muted-fg hover:border-primary",
+              )}
             >
               {s.title || "Untitled"}
             </button>
@@ -131,7 +122,7 @@ export default function ChatPage() {
       <div className="mt-4">
         <ChatWindow messages={messages} sending={sending} onSend={send} />
       </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-    </main>
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+    </div>
   );
 }

@@ -2,9 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { CalendarDays, Circle, FileText } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { ApiError, apiFetch } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Loading } from "@/components/ui/skeleton";
 
 type PlanDay = {
   day: number;
@@ -74,73 +80,63 @@ export default function PlanPage() {
   }, [token]);
 
   if (status === "loading") {
-    return <p className="p-6 text-slate-500">Loading…</p>;
+    return <Loading />;
   }
 
   const plan = data?.plan ?? null;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Learning plan</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/quiz" className="text-slate-500 hover:text-brand">
-            Quiz
-          </Link>
-          <Link href="/gaps" className="text-slate-500 hover:text-brand">
-            Gaps
-          </Link>
-          <Link href="/library" className="text-slate-500 hover:text-brand">
-            Library
-          </Link>
-        </div>
-      </header>
+    <div>
+      <h1 className="text-2xl font-bold text-ink">Learning plan</h1>
 
-      {loading && <p className="mt-6 text-slate-500">Loading your plan…</p>}
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+      {loading && (
+        <div className="mt-6">
+          <Loading label="Loading your plan…" />
+        </div>
+      )}
+      {error && <p className="mt-6 text-sm text-danger">{error}</p>}
 
       {!loading && !plan && (
-        <div className="mt-8 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-          <p className="font-semibold text-slate-700">No plan yet</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Generate a day-by-day plan from your materials, your goal, and the gaps
-            from your quizzes. Set a goal on your{" "}
-            <Link href="/profile" className="text-brand underline">
-              profile
-            </Link>{" "}
-            first for a date-aware plan.
-          </p>
-          <button
-            onClick={generate}
-            disabled={generating}
-            className="mt-4 rounded-xl bg-brand px-5 py-2.5 font-semibold text-brand-fg disabled:opacity-60"
-          >
-            {generating ? "Building your plan…" : "Generate my plan"}
-          </button>
-        </div>
+        <EmptyState
+          className="mt-8"
+          icon={CalendarDays}
+          title="No plan yet"
+          body="Generate a day-by-day plan from your materials, your goal, and the gaps from your quizzes. Set a goal on your profile first for a date-aware plan."
+          action={
+            <div className="flex flex-col items-center gap-3">
+              <Button onClick={generate} loading={generating}>
+                Generate my plan
+              </Button>
+              <Link href="/profile" className="text-sm text-primary underline">
+                Set your goal
+              </Link>
+            </div>
+          }
+        />
       )}
 
       {!loading && plan && (
         <div className="mt-6">
           {data?.stale && (
-            <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm text-amber-800">
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-warn/30 bg-warn/5 p-4">
+              <p className="text-sm text-warn">
                 Your materials or results changed — this plan may be outdated.
               </p>
-              <button
+              <Button
+                size="sm"
+                className="shrink-0"
                 onClick={generate}
-                disabled={generating}
-                className="shrink-0 rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brand-fg disabled:opacity-60"
+                loading={generating}
               >
-                {generating ? "…" : "Regenerate"}
-              </button>
+                Regenerate
+              </Button>
             </div>
           )}
 
-          <div className="rounded-xl border border-slate-200 p-5">
-            <p className="text-slate-700">{plan.summary}</p>
+          <Card>
+            <p className="text-ink">{plan.summary}</p>
             {data?.target_date && (
-              <p className="mt-2 text-xs uppercase tracking-wide text-slate-400">
+              <p className="mt-2 text-xs uppercase tracking-wide text-muted-fg">
                 Target: {data.target_date}
               </p>
             )}
@@ -148,41 +144,42 @@ export default function PlanPage() {
               <button
                 onClick={generate}
                 disabled={generating}
-                className="mt-3 text-sm font-semibold text-brand disabled:opacity-60"
+                className="mt-3 text-sm font-semibold text-primary disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 {generating ? "Regenerating…" : "Regenerate plan"}
               </button>
             )}
-          </div>
+          </Card>
 
           {/* Timeline */}
           <ol className="mt-5 space-y-3">
             {plan.days.map((d) => (
-              <li
-                key={d.day}
-                className="relative rounded-xl border border-slate-200 p-4 pl-12"
-              >
-                <span className="absolute left-3 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-fg">
+              <li key={d.day} className="relative rounded-md border border-hairline bg-surface p-4 pl-12 shadow-sm">
+                <span className="absolute left-3 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-fg">
                   {d.day}
                 </span>
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold">{d.focus}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-ink">{d.focus}</p>
                   {d.date && (
-                    <span className="text-xs text-slate-400">{d.date}</span>
+                    <span className="text-xs text-muted-fg">{d.date}</span>
                   )}
                 </div>
 
                 {d.materials.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    📄 {d.materials.join(", ")}
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-fg">
+                    <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {d.materials.join(", ")}
                   </p>
                 )}
 
                 {d.tasks.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {d.tasks.map((t, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-slate-700">
-                        <span className="text-slate-400">○</span>
+                      <li key={i} className="flex gap-2 text-sm text-ink">
+                        <Circle
+                          className="mt-1.5 h-2 w-2 shrink-0 text-muted-fg"
+                          aria-hidden="true"
+                        />
                         {t}
                       </li>
                     ))}
@@ -192,12 +189,7 @@ export default function PlanPage() {
                 {d.concepts.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {d.concepts.map((c) => (
-                      <span
-                        key={c}
-                        className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
-                      >
-                        {c}
-                      </span>
+                      <Badge key={c}>{c}</Badge>
                     ))}
                   </div>
                 )}
@@ -206,6 +198,6 @@ export default function PlanPage() {
           </ol>
         </div>
       )}
-    </main>
+    </div>
   );
 }

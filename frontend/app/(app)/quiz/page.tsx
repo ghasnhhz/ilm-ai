@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 import { ApiError, apiFetch } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Select, Textarea } from "@/components/ui/input";
+import { Loading } from "@/components/ui/skeleton";
+import { cn } from "@/lib/cn";
 
 type Collection = { id: string; name: string };
 
@@ -163,28 +169,12 @@ export default function QuizPage() {
   };
 
   if (status === "loading") {
-    return <p className="p-6 text-slate-500">Loading…</p>;
+    return <Loading />;
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Quiz</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/gaps" className="text-slate-500 hover:text-brand">
-            Gaps
-          </Link>
-          <Link href="/plan" className="text-slate-500 hover:text-brand">
-            Plan
-          </Link>
-          <Link href="/chat" className="text-slate-500 hover:text-brand">
-            Companion
-          </Link>
-          <Link href="/library" className="text-slate-500 hover:text-brand">
-            Library
-          </Link>
-        </div>
-      </header>
+    <div>
+      <h1 className="text-2xl font-bold text-ink">Quiz</h1>
 
       {phase === "setup" && (
         <SetupPhase
@@ -220,7 +210,7 @@ export default function QuizPage() {
       {phase === "results" && results && (
         <ResultsPhase results={results} onTryAgain={tryAgain} />
       )}
-    </main>
+    </div>
   );
 }
 
@@ -249,13 +239,13 @@ function SetupPhase({
 }) {
   return (
     <div className="mt-6 space-y-5">
-      <section className="rounded-xl border border-slate-200 p-5">
-        <h2 className="font-semibold">Collection</h2>
-        <p className="mt-1 text-sm text-slate-500">
+      <Card>
+        <CardTitle>Collection</CardTitle>
+        <p className="mt-1 text-sm text-muted-fg">
           Quiz from all your materials, or pick a specific collection.
         </p>
-        <select
-          className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+        <Select
+          className="mt-3"
           value={collectionId}
           onChange={(e) => setCollectionId(e.target.value)}
         >
@@ -265,66 +255,66 @@ function SetupPhase({
               {c.name}
             </option>
           ))}
-        </select>
-      </section>
+        </Select>
+      </Card>
 
-      <section className="rounded-xl border border-slate-200 p-5">
-        <h2 className="font-semibold">Difficulty</h2>
+      <Card>
+        <CardTitle>Difficulty</CardTitle>
         <div className="mt-3 flex gap-3">
           {DIFFICULTIES.map((d) => (
             <button
               key={d.value}
               onClick={() => setDifficulty(d.value)}
-              className={`flex-1 rounded-lg border p-3 text-left text-sm transition-colors ${
+              aria-pressed={difficulty === d.value}
+              className={cn(
+                "flex-1 rounded-md border p-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 difficulty === d.value
-                  ? "border-brand bg-brand/5 text-brand"
-                  : "border-slate-200 text-slate-600 hover:border-brand"
-              }`}
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-hairline text-muted-fg hover:border-primary",
+              )}
             >
               <p className="font-semibold">{d.label}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{d.desc}</p>
+              <p className="mt-0.5 text-xs text-muted-fg">{d.desc}</p>
             </button>
           ))}
         </div>
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-slate-200 p-5">
-        <h2 className="font-semibold">Number of questions</h2>
+      <Card>
+        <CardTitle>Number of questions</CardTitle>
         <div className="mt-3 flex items-center gap-3">
           {[3, 5, 7, 10].map((n) => (
             <button
               key={n}
               onClick={() => setNQuestions(n)}
-              className={`rounded-lg border px-4 py-2 text-sm font-semibold ${
+              aria-pressed={nQuestions === n}
+              className={cn(
+                "rounded-md border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 nQuestions === n
-                  ? "border-brand bg-brand/5 text-brand"
-                  : "border-slate-200 text-slate-600 hover:border-brand"
-              }`}
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-hairline text-muted-fg hover:border-primary",
+              )}
             >
               {n}
             </button>
           ))}
         </div>
-      </section>
+      </Card>
 
       {error && (
-        <div className="text-sm text-red-600">
+        <div className="text-sm text-danger">
           <p>{error}</p>
           {/Upgrade|premium/i.test(error) && (
-            <Link href="/pricing" className="font-semibold text-brand underline">
+            <Link href="/pricing" className="font-semibold text-primary underline">
               View pricing →
             </Link>
           )}
         </div>
       )}
 
-      <button
-        onClick={onStart}
-        disabled={generating}
-        className="w-full rounded-xl bg-brand py-3 font-semibold text-brand-fg disabled:opacity-60"
-      >
-        {generating ? "Generating questions…" : "Start quiz"}
-      </button>
+      <Button className="w-full" onClick={onStart} loading={generating}>
+        Start quiz
+      </Button>
     </div>
   );
 }
@@ -362,24 +352,22 @@ function QuestionPhase({
   return (
     <div className="mt-6">
       {/* Progress */}
-      <div className="flex items-center justify-between text-sm text-slate-500">
+      <div className="flex items-center justify-between text-sm text-muted-fg">
         <span>
           Question {currentIdx + 1} of {total}
         </span>
-        {q.concept && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{q.concept}</span>
-        )}
+        {q.concept && <Badge>{q.concept}</Badge>}
       </div>
-      <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100">
+      <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
         <div
-          className="h-1.5 rounded-full bg-brand transition-all"
+          className="h-1.5 rounded-full bg-primary transition-all"
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Question */}
-      <div className="mt-5 rounded-xl border border-slate-200 p-5">
-        <p className="font-medium leading-relaxed">{q.prompt}</p>
+      <Card className="mt-5">
+        <p className="font-medium leading-relaxed text-ink">{q.prompt}</p>
 
         {q.question_type === "mc" && !feedback && (
           <div className="mt-4 space-y-2">
@@ -387,11 +375,13 @@ function QuestionPhase({
               <button
                 key={opt}
                 onClick={() => setSelectedOption(opt[0])}
-                className={`w-full rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
+                aria-pressed={selectedOption === opt[0]}
+                className={cn(
+                  "w-full rounded-md border px-4 py-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   selectedOption === opt[0]
-                    ? "border-brand bg-brand/5 text-brand"
-                    : "border-slate-200 text-slate-700 hover:border-brand"
-                }`}
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-hairline text-ink hover:border-primary",
+                )}
               >
                 {opt}
               </button>
@@ -400,8 +390,8 @@ function QuestionPhase({
         )}
 
         {q.question_type === "short" && !feedback && (
-          <textarea
-            className="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+          <Textarea
+            className="mt-4"
             rows={3}
             placeholder="Type your answer…"
             value={shortAnswer}
@@ -411,50 +401,51 @@ function QuestionPhase({
 
         {feedback && (
           <div
-            className={`mt-4 rounded-lg border p-4 ${
+            className={cn(
+              "mt-4 rounded-md border p-4",
               feedback.is_correct
-                ? "border-green-200 bg-green-50"
-                : "border-red-200 bg-red-50"
-            }`}
+                ? "border-success/30 bg-success/5"
+                : "border-danger/30 bg-danger/5",
+            )}
           >
             <p
-              className={`font-semibold ${feedback.is_correct ? "text-green-700" : "text-red-700"}`}
+              className={cn(
+                "font-semibold",
+                feedback.is_correct ? "text-success" : "text-danger",
+              )}
             >
               {feedback.is_correct ? "Correct!" : "Incorrect"}
             </p>
             {!feedback.is_correct && (
-              <p className="mt-1 text-sm text-slate-700">
+              <p className="mt-1 text-sm text-ink">
                 Correct answer: <strong>{feedback.correct_answer}</strong>
               </p>
             )}
             {feedback.explanation && (
-              <p className="mt-1 text-sm text-slate-600">{feedback.explanation}</p>
+              <p className="mt-1 text-sm text-muted-fg">{feedback.explanation}</p>
             )}
           </div>
         )}
-      </div>
+      </Card>
 
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
       <div className="mt-4 flex justify-end">
         {!feedback ? (
-          <button
+          <Button
+            size="lg"
             onClick={onSubmit}
+            loading={submitting}
             disabled={
-              submitting ||
-              (q.question_type === "mc" ? !selectedOption : !shortAnswer.trim())
+              q.question_type === "mc" ? !selectedOption : !shortAnswer.trim()
             }
-            className="rounded-xl bg-brand px-6 py-2.5 font-semibold text-brand-fg disabled:opacity-60"
           >
-            {submitting ? "Checking…" : "Submit"}
-          </button>
+            Submit
+          </Button>
         ) : (
-          <button
-            onClick={onNext}
-            className="rounded-xl bg-brand px-6 py-2.5 font-semibold text-brand-fg"
-          >
+          <Button size="lg" onClick={onNext}>
             {isLast ? "See results" : "Next question"}
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -473,65 +464,66 @@ function ResultsPhase({
 
   return (
     <div className="mt-6">
-      <div className="rounded-xl border border-slate-200 p-6 text-center">
-        <p className="text-5xl font-bold text-brand">{pct}%</p>
-        <p className="mt-2 text-lg font-semibold">
+      <Card className="p-6 text-center">
+        <p className="text-5xl font-bold text-primary">{pct}%</p>
+        <p className="mt-2 text-lg font-semibold text-ink">
           {results.score} / {results.total} correct
         </p>
-        <p className="mt-1 text-sm capitalize text-slate-500">{results.difficulty} difficulty</p>
-      </div>
+        <p className="mt-1 text-sm capitalize text-muted-fg">
+          {results.difficulty} difficulty
+        </p>
+      </Card>
 
       <div className="mt-5 space-y-2">
         {results.answers.map((a, i) => (
-          <div key={a.question_id} className="rounded-xl border border-slate-200">
+          <Card key={a.question_id} className="p-0">
             <button
-              className="flex w-full items-center justify-between px-4 py-3 text-left"
+              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               onClick={() => setExpanded(expanded === a.question_id ? null : a.question_id)}
+              aria-expanded={expanded === a.question_id}
             >
-              <span className="flex items-center gap-2 text-sm">
+              <span className="flex items-center gap-2 text-sm text-ink">
                 <span
-                  className={`inline-block h-5 w-5 rounded-full text-center text-xs font-bold leading-5 ${
+                  className={cn(
+                    "inline-block h-5 w-5 rounded-full text-center text-xs font-bold leading-5",
                     a.is_correct === true
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-success/15 text-success"
                       : a.is_correct === false
-                        ? "bg-red-100 text-red-700"
-                        : "bg-slate-100 text-slate-500"
-                  }`}
+                        ? "bg-danger/15 text-danger"
+                        : "bg-muted text-muted-fg",
+                  )}
                 >
                   {a.is_correct === true ? "✓" : a.is_correct === false ? "✗" : "—"}
                 </span>
                 Q{i + 1}: {a.prompt.length > 60 ? a.prompt.slice(0, 60) + "…" : a.prompt}
               </span>
-              <span className="ml-2 text-xs text-slate-400">{expanded === a.question_id ? "▲" : "▼"}</span>
+              <span className="ml-2 text-xs text-muted-fg">
+                {expanded === a.question_id ? "▲" : "▼"}
+              </span>
             </button>
             {expanded === a.question_id && (
-              <div className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">
+              <div className="border-t border-hairline px-4 py-3 text-sm text-muted-fg">
                 <p>
-                  <strong>Your answer:</strong> {a.user_answer ?? "—"}
+                  <strong className="text-ink">Your answer:</strong> {a.user_answer ?? "—"}
                 </p>
                 <p className="mt-1">
-                  <strong>Correct answer:</strong> {a.correct_answer}
+                  <strong className="text-ink">Correct answer:</strong> {a.correct_answer}
                 </p>
-                {a.explanation && (
-                  <p className="mt-1 text-slate-500">{a.explanation}</p>
-                )}
+                {a.explanation && <p className="mt-1">{a.explanation}</p>}
                 {a.concept && (
-                  <span className="mt-2 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                    {a.concept}
-                  </span>
+                  <div className="mt-2">
+                    <Badge>{a.concept}</Badge>
+                  </div>
                 )}
               </div>
             )}
-          </div>
+          </Card>
         ))}
       </div>
 
-      <button
-        onClick={onTryAgain}
-        className="mt-6 w-full rounded-xl border border-brand py-3 font-semibold text-brand hover:bg-brand/5"
-      >
+      <Button variant="secondary" className="mt-6 w-full" onClick={onTryAgain}>
         Try again
-      </button>
+      </Button>
     </div>
   );
 }
