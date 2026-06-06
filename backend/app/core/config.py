@@ -1,7 +1,11 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Placeholder value shipped in defaults; must be overridden before going to production.
+_DEFAULT_SECRET = "change-me-in-env"
 
 # Resolve the project root from this file's location so the .env is always
 # found regardless of which directory uvicorn/alembic is run from.
@@ -66,6 +70,25 @@ class Settings(BaseSettings):
     sentry_traces_sample_rate: float = 0.1
     # Comma-separated emails allowed to hit the admin metrics endpoint.
     admin_emails: str = ""
+
+    @model_validator(mode="after")
+    def _require_secrets_in_production(self) -> "Settings":
+        # In production the placeholder secrets are a real security hole (forgeable JWTs,
+        # spoofable server-to-server bridges), so refuse to boot until they're set.
+        # Dev/test keep the convenient defaults.
+        if self.environment.lower() == "production":
+            placeholders = [
+                name
+                for name in ("jwt_secret", "auth_bridge_secret", "telegram_bot_secret")
+                if getattr(self, name) == _DEFAULT_SECRET
+            ]
+            if placeholders:
+                raise ValueError(
+                    "Refusing to start in production with default secrets: "
+                    + ", ".join(placeholders)
+                    + ". Set these to strong, unique values via environment variables."
+                )
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

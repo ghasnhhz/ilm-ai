@@ -69,6 +69,7 @@ export default function ChatPage() {
         token,
         method: "POST",
         body: { message: text, session_id: activeId },
+        timeoutMs: 90_000, // RAG retrieval + LLM answer can run long
       });
       setMessages((prev) => [...prev, res.message]);
       if (!activeId) {

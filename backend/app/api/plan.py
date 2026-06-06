@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,6 +11,8 @@ from app.models.plan import LearningPlan
 from app.models.user import User
 from app.schemas.plan import LearningPlanOut, PlanContent
 from app.services import plan_agent
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/plan", tags=["plan"])
 
@@ -38,10 +42,11 @@ def generate(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
         )
-    except Exception as e:
+    except Exception:
+        logger.exception("Plan generation failed for user %s", current_user.id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate plan: {e}",
+            detail="Could not generate your plan right now. Please try again.",
         )
     return _to_out(plan)
 
