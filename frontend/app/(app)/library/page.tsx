@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 import { apiFetch } from "@/lib/api";
@@ -9,6 +8,7 @@ import type { Collection, Material } from "@/types/api";
 import { CollectionManager } from "@/components/collection-manager";
 import { MaterialList } from "@/components/material-list";
 import { UploadZone } from "@/components/upload-zone";
+import { Loading } from "@/components/ui/skeleton";
 
 export default function LibraryPage() {
   const { data: session, status } = useSession();
@@ -33,41 +33,20 @@ export default function LibraryPage() {
   }, [loadCollections, loadMaterials]);
 
   if (status === "loading") {
-    return <p className="p-6 text-slate-500">Loading…</p>;
+    return <Loading />;
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Your library</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/chat" className="text-slate-500 hover:text-brand">
-            Companion
-          </Link>
-          <Link href="/quiz" className="text-slate-500 hover:text-brand">
-            Quiz
-          </Link>
-          <Link href="/gaps" className="text-slate-500 hover:text-brand">
-            Gaps
-          </Link>
-          <Link href="/plan" className="text-slate-500 hover:text-brand">
-            Plan
-          </Link>
-          <Link href="/profile" className="text-slate-500 hover:text-brand">
-            Profile
-          </Link>
-        </div>
-      </header>
-      <p className="mt-1 text-sm text-slate-600">
-        Upload your study materials. We extract, chunk and embed them so your companion can
-        learn from them.
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-ink">Your library</h1>
+        <p className="mt-1 text-sm text-muted-fg">
+          Upload your study materials. We extract, chunk and embed them so your
+          companion can learn from them.
+        </p>
+      </div>
 
-      <UploadZone
-        token={token}
-        collections={collections}
-        onUploaded={loadMaterials}
-      />
+      <UploadZone token={token} collections={collections} onUploaded={loadMaterials} />
       <CollectionManager
         token={token}
         collections={collections}
@@ -79,6 +58,6 @@ export default function LibraryPage() {
         collections={collections}
         onChange={loadMaterials}
       />
-    </main>
+    </div>
   );
 }

@@ -10,13 +10,14 @@ export function SourceCitation({ citation }: { citation: Citation }) {
     <span className="inline-block">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-xs text-slate-600 hover:border-brand hover:text-brand"
+        aria-expanded={open}
+        className="rounded-full border border-hairline bg-surface px-2 py-0.5 text-xs text-muted-fg transition-colors hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         title="Show source snippet"
       >
         {citation.material_title} #{citation.chunk_index}
       </button>
       {open && (
-        <span className="mt-1 block rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
+        <span className="mt-1 block rounded-md border border-hairline bg-muted p-2 text-xs text-muted-fg">
           {citation.snippet}
           {citation.snippet.length >= 300 ? "…" : ""}
         </span>
