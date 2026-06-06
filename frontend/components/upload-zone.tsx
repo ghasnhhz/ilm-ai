@@ -4,6 +4,11 @@ import { useRef, useState } from "react";
 
 import { ApiError, apiFetch } from "@/lib/api";
 import type { Collection, Material } from "@/types/api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input, Textarea, Select, Label } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
+import { cn } from "@/lib/cn";
 
 const ACCEPT = ".pdf,.docx,.txt";
 
@@ -16,12 +21,11 @@ export function UploadZone({
   collections: Collection[];
   onUploaded: () => void | Promise<void>;
 }) {
+  const { toast } = useToast();
   const [tab, setTab] = useState<"file" | "paste">("file");
   const [collectionId, setCollectionId] = useState("");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -29,17 +33,18 @@ export function UploadZone({
 
   function report(material: Material) {
     if (material.status === "failed") {
-      setError(`"${material.title}" failed: ${material.error ?? "unknown error"}`);
+      toast(
+        `"${material.title}" failed: ${material.error ?? "unknown error"}`,
+        "error",
+      );
     } else {
-      setMsg(`Added "${material.title}" (${material.chunk_count} chunks)`);
+      toast(`Added "${material.title}" (${material.chunk_count} chunks)`, "success");
     }
   }
 
   async function uploadFile(file: File) {
     if (!token) return;
     setBusy(true);
-    setMsg(null);
-    setError(null);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -52,7 +57,7 @@ export function UploadZone({
       report(material);
       await onUploaded();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Upload failed");
+      toast(e instanceof ApiError ? e.message : "Upload failed", "error");
     }
     setBusy(false);
   }
@@ -60,8 +65,6 @@ export function UploadZone({
   async function submitPaste() {
     if (!token || !title.trim() || !text.trim()) return;
     setBusy(true);
-    setMsg(null);
-    setError(null);
     try {
       const material = await apiFetch<Material>("/materials/paste", {
         token,
@@ -73,13 +76,13 @@ export function UploadZone({
       setText("");
       await onUploaded();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not save text");
+      toast(e instanceof ApiError ? e.message : "Could not save text", "error");
     }
     setBusy(false);
   }
 
   return (
-    <section className="mt-6 rounded-xl border border-slate-200 p-5">
+    <Card>
       <div className="flex gap-2">
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>
           Upload file
@@ -89,10 +92,11 @@ export function UploadZone({
         </TabButton>
       </div>
 
-      <label className="mt-4 block text-sm text-slate-600">
-        Collection
-        <select
-          className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5"
+      <div className="mt-4">
+        <Label htmlFor="upload-collection">Collection</Label>
+        <Select
+          id="upload-collection"
+          className="mt-1"
           value={collectionId}
           onChange={(e) => setCollectionId(e.target.value)}
         >
@@ -102,8 +106,8 @@ export function UploadZone({
               {c.name}
             </option>
           ))}
-        </select>
-      </label>
+        </Select>
+      </div>
 
       {tab === "file" ? (
         <div
@@ -119,14 +123,15 @@ export function UploadZone({
             if (file) void uploadFile(file);
           }}
           onClick={() => inputRef.current?.click()}
-          className={`mt-4 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center ${
-            dragging ? "border-brand bg-brand/5" : "border-slate-300"
-          }`}
+          className={cn(
+            "mt-4 flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed px-4 py-8 text-center transition-colors",
+            dragging ? "border-primary bg-primary/5" : "border-hairline",
+          )}
         >
-          <p className="text-sm font-medium">
+          <p className="text-sm font-medium text-ink">
             {busy ? "Uploading…" : "Drag & drop, or click to choose"}
           </p>
-          <p className="mt-1 text-xs text-slate-400">PDF, DOCX or TXT</p>
+          <p className="mt-1 text-xs text-muted-fg">PDF, DOCX or TXT</p>
           <input
             ref={inputRef}
             type="file"
@@ -142,32 +147,28 @@ export function UploadZone({
         </div>
       ) : (
         <div className="mt-4 flex flex-col gap-3">
-          <input
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5"
+          <Input
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          <textarea
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5"
+          <Textarea
             rows={6}
             placeholder="Paste your notes or text here…"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <button
+          <Button
+            className="self-start"
             onClick={submitPaste}
-            disabled={busy || !title.trim() || !text.trim()}
-            className="self-start rounded-lg bg-brand px-4 py-2 font-semibold text-brand-fg disabled:opacity-60"
+            loading={busy}
+            disabled={!title.trim() || !text.trim()}
           >
-            {busy ? "Saving…" : "Add text"}
-          </button>
+            Add text
+          </Button>
         </div>
       )}
-
-      {msg && <p className="mt-3 text-sm text-emerald-600">{msg}</p>}
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-    </section>
+    </Card>
   );
 }
 
@@ -183,9 +184,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-        active ? "bg-brand text-brand-fg" : "text-slate-500 hover:text-brand"
-      }`}
+      className={cn(
+        "rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        active ? "bg-primary text-primary-fg" : "text-muted-fg hover:text-ink",
+      )}
     >
       {children}
     </button>

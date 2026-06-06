@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Loader2, Send } from "lucide-react";
 
 import type { ChatMessage } from "@/types/api";
 import { MessageBubble } from "@/components/message-bubble";
+import { Textarea } from "@/components/ui/input";
 
 export function ChatWindow({
   messages,
@@ -29,24 +31,27 @@ export function ChatWindow({
   }
 
   return (
-    <div className="flex h-[70vh] flex-col rounded-xl border border-slate-200">
+    <div className="flex h-[calc(100vh-16rem)] min-h-[24rem] flex-col rounded-lg border border-hairline bg-surface">
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-slate-400">
+          <p className="mt-8 text-center text-sm text-muted-fg">
             Ask anything about your uploaded materials.
           </p>
         ) : (
           messages.map((m) => <MessageBubble key={m.id} message={m} />)
         )}
         {sending && (
-          <p className="text-sm text-slate-400">Ilm is thinking…</p>
+          <p className="flex items-center gap-2 text-sm text-muted-fg">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Ilm is thinking…
+          </p>
         )}
         <div ref={endRef} />
       </div>
 
-      <div className="flex gap-2 border-t border-slate-200 p-3">
-        <textarea
-          className="max-h-32 w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+      <div className="flex gap-2 border-t border-hairline p-3">
+        <Textarea
+          className="max-h-32 resize-none"
           rows={1}
           placeholder="Type your question…"
           value={text}
@@ -61,9 +66,10 @@ export function ChatWindow({
         <button
           onClick={submit}
           disabled={sending || !text.trim()}
-          className="shrink-0 self-end rounded-lg bg-brand px-4 py-2.5 font-semibold text-brand-fg disabled:opacity-60"
+          aria-label="Send message"
+          className="flex shrink-0 items-center justify-center self-end rounded-md bg-primary px-4 py-2.5 text-primary-fg shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-page disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Send
+          <Send className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
     </div>

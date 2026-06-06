@@ -2,9 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Target } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { apiFetch } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Loading } from "@/components/ui/skeleton";
 
 type ConceptStat = {
   concept: string;
@@ -58,7 +64,7 @@ export default function GapsPage() {
   }, [load]);
 
   if (status === "loading") {
-    return <p className="p-6 text-slate-500">Loading…</p>;
+    return <Loading />;
   }
 
   const isEmpty =
@@ -68,45 +74,27 @@ export default function GapsPage() {
     report.suggested_sections.length === 0;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 py-8 sm:max-w-2xl">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Knowledge gaps</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/quiz" className="text-slate-500 hover:text-brand">
-            Quiz
-          </Link>
-          <Link href="/plan" className="text-slate-500 hover:text-brand">
-            Plan
-          </Link>
-          <Link href="/chat" className="text-slate-500 hover:text-brand">
-            Companion
-          </Link>
-          <Link href="/library" className="text-slate-500 hover:text-brand">
-            Library
-          </Link>
-        </div>
-      </header>
-
-      <p className="mt-2 text-sm text-slate-500">
+    <div>
+      <h1 className="text-2xl font-bold text-ink">Knowledge gaps</h1>
+      <p className="mt-1 text-sm text-muted-fg">
         Based on every quiz you&apos;ve taken — updates as you practice more.
       </p>
 
-      {loading && <p className="mt-6 text-slate-500">Loading your report…</p>}
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+      {loading && (
+        <div className="mt-6">
+          <Loading label="Loading your report…" />
+        </div>
+      )}
+      {error && <p className="mt-6 text-sm text-danger">{error}</p>}
 
       {report && isEmpty && !loading && (
-        <div className="mt-8 rounded-xl border border-dashed border-slate-300 p-8 text-center">
-          <p className="font-semibold text-slate-700">No gaps to show yet</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Take a few quizzes and your strengths and weak spots will appear here.
-          </p>
-          <Link
-            href="/quiz"
-            className="mt-4 inline-block rounded-xl bg-brand px-5 py-2.5 font-semibold text-brand-fg"
-          >
-            Start a quiz
-          </Link>
-        </div>
+        <EmptyState
+          className="mt-8"
+          icon={Target}
+          title="No gaps to show yet"
+          body="Take a few quizzes and your strengths and weak spots will appear here."
+          action={<Button href="/quiz">Start a quiz</Button>}
+        />
       )}
 
       {report && !isEmpty && !loading && (
@@ -114,21 +102,21 @@ export default function GapsPage() {
           {/* Needs work */}
           {report.gaps.length > 0 && (
             <section>
-              <h2 className="font-semibold text-amber-700">Needs work</h2>
+              <h2 className="font-semibold text-warn">Needs work</h2>
               <div className="mt-3 space-y-2">
                 {report.gaps.map((g) => (
                   <div
                     key={g.concept}
-                    className="rounded-xl border border-amber-200 bg-amber-50 p-4"
+                    className="rounded-md border border-warn/30 bg-warn/5 p-4"
                   >
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-slate-800">{g.concept}</p>
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-ink">{g.concept}</p>
+                      <Badge variant="warn">
                         {g.wrong_count} missed · {g.sessions} sessions
-                      </span>
+                      </Badge>
                     </div>
                     {g.materials.length > 0 && (
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-muted-fg">
                         From: {g.materials.join(", ")}
                       </p>
                     )}
@@ -141,17 +129,17 @@ export default function GapsPage() {
           {/* What you know well */}
           {report.strong.length > 0 && (
             <section>
-              <h2 className="font-semibold text-green-700">What you know well</h2>
+              <h2 className="font-semibold text-success">What you know well</h2>
               <div className="mt-3 space-y-2">
                 {report.strong.map((s) => (
                   <div
                     key={s.concept}
-                    className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 p-4"
+                    className="flex items-center justify-between gap-3 rounded-md border border-success/30 bg-success/5 p-4"
                   >
-                    <p className="font-medium text-slate-800">{s.concept}</p>
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                    <p className="font-medium text-ink">{s.concept}</p>
+                    <Badge variant="success">
                       {s.accuracy}% · {s.correct}/{s.total}
-                    </span>
+                    </Badge>
                   </div>
                 ))}
               </div>
@@ -161,18 +149,20 @@ export default function GapsPage() {
           {/* Revisit these materials */}
           {report.suggested_sections.length > 0 && (
             <section>
-              <h2 className="font-semibold">Revisit these materials</h2>
+              <h2 className="font-semibold text-ink">Revisit these materials</h2>
               <div className="mt-3 space-y-2">
                 {report.suggested_sections.map((sec) => (
                   <Link
                     key={sec.material_id}
                     href="/library"
-                    className="block rounded-xl border border-slate-200 p-4 hover:border-brand"
+                    className="block focus-visible:outline-none"
                   >
-                    <p className="font-medium text-slate-800">{sec.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Covers: {sec.concepts.join(", ")}
-                    </p>
+                    <Card className="p-4 transition-colors hover:border-primary">
+                      <p className="font-medium text-ink">{sec.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-fg">
+                        Covers: {sec.concepts.join(", ")}
+                      </p>
+                    </Card>
                   </Link>
                 ))}
               </div>
@@ -180,6 +170,6 @@ export default function GapsPage() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }

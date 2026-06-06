@@ -4,6 +4,11 @@ import { useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import type { Collection } from "@/types/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ConfirmDialog, PromptDialog } from "@/components/ui/modal";
+import { useToast } from "@/components/ui/toast";
 
 export function CollectionManager({
   token,
@@ -14,87 +19,102 @@ export function CollectionManager({
   collections: Collection[];
   onChange: () => void | Promise<void>;
 }) {
+  const { toast } = useToast();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<Collection | null>(null);
+  const [deleting, setDeleting] = useState<Collection | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   async function create() {
     if (!token || !name.trim()) return;
     setBusy(true);
-    setError(null);
     try {
-      await apiFetch("/collections", { token, method: "POST", body: { name: name.trim() } });
+      await apiFetch("/collections", {
+        token,
+        method: "POST",
+        body: { name: name.trim() },
+      });
       setName("");
       await onChange();
     } catch {
-      setError("Could not create collection");
+      toast("Could not create collection", "error");
     }
     setBusy(false);
   }
 
-  async function rename(c: Collection) {
-    if (!token) return;
-    const next = window.prompt("Rename collection", c.name);
-    if (!next || next.trim() === c.name) return;
+  async function confirmRename(next: string) {
+    if (!token || !renaming || next === renaming.name) {
+      setRenaming(null);
+      return;
+    }
     try {
-      await apiFetch(`/collections/${c.id}`, {
+      await apiFetch(`/collections/${renaming.id}`, {
         token,
         method: "PUT",
-        body: { name: next.trim() },
+        body: { name: next },
       });
       await onChange();
     } catch {
-      setError("Could not rename collection");
+      toast("Could not rename collection", "error");
     }
+    setRenaming(null);
   }
 
-  async function remove(c: Collection) {
-    if (!token) return;
-    if (!window.confirm(`Delete "${c.name}"? Its materials become uncategorized.`)) return;
+  async function confirmDelete() {
+    if (!token || !deleting) return;
+    setRemoving(true);
     try {
-      await apiFetch(`/collections/${c.id}`, { token, method: "DELETE" });
+      await apiFetch(`/collections/${deleting.id}`, { token, method: "DELETE" });
       await onChange();
+      setDeleting(null);
     } catch {
-      setError("Could not delete collection");
+      toast("Could not delete collection", "error");
     }
+    setRemoving(false);
   }
 
   return (
-    <section className="mt-4 rounded-xl border border-slate-200 p-5">
-      <h2 className="font-semibold">Collections</h2>
-      <p className="mt-1 text-sm text-slate-600">Group your materials by topic.</p>
+    <Card>
+      <CardTitle>Collections</CardTitle>
+      <p className="mt-1 text-sm text-muted-fg">Group your materials by topic.</p>
 
       <div className="mt-3 flex gap-2">
-        <input
-          className="w-full rounded-lg border border-slate-300 px-3 py-2.5"
+        <Input
           placeholder="New collection name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && create()}
         />
-        <button
+        <Button
+          className="shrink-0"
           onClick={create}
-          disabled={busy || !name.trim()}
-          className="shrink-0 rounded-lg bg-brand px-4 py-2 font-semibold text-brand-fg disabled:opacity-60"
+          loading={busy}
+          disabled={!name.trim()}
         >
           Add
-        </button>
+        </Button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
       {collections.length > 0 && (
         <ul className="mt-4 flex flex-col gap-2">
           {collections.map((c) => (
             <li
               key={c.id}
-              className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2"
+              className="flex items-center justify-between rounded-md border border-hairline px-3 py-2"
             >
-              <span className="text-sm font-medium">{c.name}</span>
+              <span className="text-sm font-medium text-ink">{c.name}</span>
               <span className="flex gap-3 text-xs">
-                <button onClick={() => rename(c)} className="text-slate-500 hover:text-brand">
+                <button
+                  onClick={() => setRenaming(c)}
+                  className="text-muted-fg hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
                   Rename
                 </button>
-                <button onClick={() => remove(c)} className="text-slate-500 hover:text-red-600">
+                <button
+                  onClick={() => setDeleting(c)}
+                  className="text-muted-fg hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
                   Delete
                 </button>
               </span>
@@ -102,6 +122,29 @@ export function CollectionManager({
           ))}
         </ul>
       )}
-    </section>
+
+      <PromptDialog
+        open={renaming !== null}
+        title="Rename collection"
+        defaultValue={renaming?.name ?? ""}
+        confirmLabel="Rename"
+        onConfirm={confirmRename}
+        onClose={() => setRenaming(null)}
+      />
+      <ConfirmDialog
+        open={deleting !== null}
+        title="Delete collection?"
+        message={
+          deleting
+            ? `Delete "${deleting.name}"? Its materials become uncategorized.`
+            : ""
+        }
+        confirmLabel="Delete"
+        danger
+        loading={removing}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleting(null)}
+      />
+    </Card>
   );
 }
