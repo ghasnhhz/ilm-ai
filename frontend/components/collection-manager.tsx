@@ -9,6 +9,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog, PromptDialog } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { useT } from "@/lib/i18n";
 
 export function CollectionManager({
   token,
@@ -20,6 +21,7 @@ export function CollectionManager({
   onChange: () => void | Promise<void>;
 }) {
   const { toast } = useToast();
+  const { t } = useT();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [renaming, setRenaming] = useState<Collection | null>(null);
@@ -38,7 +40,7 @@ export function CollectionManager({
       setName("");
       await onChange();
     } catch {
-      toast("Could not create collection", "error");
+      toast(t("collection.createFailed"), "error");
     }
     setBusy(false);
   }
@@ -56,7 +58,7 @@ export function CollectionManager({
       });
       await onChange();
     } catch {
-      toast("Could not rename collection", "error");
+      toast(t("collection.renameFailed"), "error");
     }
     setRenaming(null);
   }
@@ -69,19 +71,19 @@ export function CollectionManager({
       await onChange();
       setDeleting(null);
     } catch {
-      toast("Could not delete collection", "error");
+      toast(t("collection.deleteFailed"), "error");
     }
     setRemoving(false);
   }
 
   return (
     <Card>
-      <CardTitle>Collections</CardTitle>
-      <p className="mt-1 text-sm text-muted-fg">Group your materials by topic.</p>
+      <CardTitle>{t("collection.title")}</CardTitle>
+      <p className="mt-1 text-sm text-muted-fg">{t("collection.subtitle")}</p>
 
       <div className="mt-3 flex gap-2">
         <Input
-          placeholder="New collection name"
+          placeholder={t("collection.newPlaceholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && create()}
@@ -92,7 +94,7 @@ export function CollectionManager({
           loading={busy}
           disabled={!name.trim()}
         >
-          Add
+          {t("collection.add")}
         </Button>
       </div>
 
@@ -109,13 +111,13 @@ export function CollectionManager({
                   onClick={() => setRenaming(c)}
                   className="text-muted-fg hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  Rename
+                  {t("collection.rename")}
                 </button>
                 <button
                   onClick={() => setDeleting(c)}
                   className="text-muted-fg hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  Delete
+                  {t("collection.delete")}
                 </button>
               </span>
             </li>
@@ -125,21 +127,19 @@ export function CollectionManager({
 
       <PromptDialog
         open={renaming !== null}
-        title="Rename collection"
+        title={t("collection.renameTitle")}
         defaultValue={renaming?.name ?? ""}
-        confirmLabel="Rename"
+        confirmLabel={t("collection.rename")}
         onConfirm={confirmRename}
         onClose={() => setRenaming(null)}
       />
       <ConfirmDialog
         open={deleting !== null}
-        title="Delete collection?"
+        title={t("collection.deleteTitle")}
         message={
-          deleting
-            ? `Delete "${deleting.name}"? Its materials become uncategorized.`
-            : ""
+          deleting ? t("collection.deleteMessage", { name: deleting.name }) : ""
         }
-        confirmLabel="Delete"
+        confirmLabel={t("common.delete")}
         danger
         loading={removing}
         onConfirm={confirmDelete}

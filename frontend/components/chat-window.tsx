@@ -6,6 +6,7 @@ import { Loader2, Send } from "lucide-react";
 import type { ChatMessage } from "@/types/api";
 import { MessageBubble } from "@/components/message-bubble";
 import { Textarea } from "@/components/ui/input";
+import { useT } from "@/lib/i18n";
 
 export function ChatWindow({
   messages,
@@ -16,6 +17,7 @@ export function ChatWindow({
   sending: boolean;
   onSend: (text: string) => void | Promise<void>;
 }) {
+  const { t } = useT();
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +37,7 @@ export function ChatWindow({
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <p className="mt-8 text-center text-sm text-muted-fg">
-            Ask anything about your uploaded materials.
+            {t("chat.empty")}
           </p>
         ) : (
           messages.map((m) => <MessageBubble key={m.id} message={m} />)
@@ -43,7 +45,7 @@ export function ChatWindow({
         {sending && (
           <p className="flex items-center gap-2 text-sm text-muted-fg">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Ilm is thinking…
+            {t("chat.thinking")}
           </p>
         )}
         <div ref={endRef} />
@@ -53,7 +55,7 @@ export function ChatWindow({
         <Textarea
           className="max-h-32 resize-none"
           rows={1}
-          placeholder="Type your question…"
+          placeholder={t("chat.inputPlaceholder")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -66,7 +68,7 @@ export function ChatWindow({
         <button
           onClick={submit}
           disabled={sending || !text.trim()}
-          aria-label="Send message"
+          aria-label={t("chat.send")}
           className="flex shrink-0 items-center justify-center self-end rounded-md bg-primary px-4 py-2.5 text-primary-fg shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-page disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Send className="h-5 w-5" aria-hidden="true" />

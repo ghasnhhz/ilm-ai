@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Select, Textarea } from "@/components/ui/input";
 import { Loading } from "@/components/ui/skeleton";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
 type Collection = { id: string; name: string };
@@ -59,14 +60,27 @@ type Phase = "setup" | "questions" | "results";
 const optionLetter = (idx: number) => String.fromCharCode(65 + idx);
 
 const DIFFICULTIES = [
-  { value: "gentle", label: "Gentle", desc: "Definitions and key facts" },
-  { value: "solid", label: "Solid", desc: "Mechanisms and relationships" },
-  { value: "expert", label: "Expert", desc: "Application and analysis" },
-];
+  {
+    value: "gentle",
+    labelKey: "quiz.difficulty.gentle",
+    descKey: "quiz.difficulty.gentleDesc",
+  },
+  {
+    value: "solid",
+    labelKey: "quiz.difficulty.solid",
+    descKey: "quiz.difficulty.solidDesc",
+  },
+  {
+    value: "expert",
+    labelKey: "quiz.difficulty.expert",
+    descKey: "quiz.difficulty.expertDesc",
+  },
+] as const;
 
 export default function QuizPage() {
   const { data: session, status } = useSession();
   const token = session?.accessToken;
+  const { t } = useT();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -117,13 +131,11 @@ export default function QuizPage() {
       setPhase("questions");
     } catch (e) {
       setError(
-        e instanceof ApiError
-          ? e.message
-          : "Failed to generate questions. Make sure you have uploaded study materials.",
+        e instanceof ApiError ? e.message : t("quiz.generateError"),
       );
     }
     setGenerating(false);
-  }, [token, collectionId, difficulty, nQuestions]);
+  }, [token, collectionId, difficulty, nQuestions, t]);
 
   const submitAnswer = useCallback(async () => {
     const q = questions[currentIdx];
@@ -146,10 +158,10 @@ export default function QuizPage() {
       });
       setFeedback(fb);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Failed to submit answer.");
+      setError(e instanceof ApiError ? e.message : t("quiz.answerError"));
     }
     setSubmitting(false);
-  }, [token, questions, currentIdx, selectedIdx, shortAnswer]);
+  }, [token, questions, currentIdx, selectedIdx, shortAnswer, t]);
 
   const nextQuestion = useCallback(async () => {
     const nextIdx = currentIdx + 1;
@@ -186,7 +198,7 @@ export default function QuizPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ink">Quiz</h1>
+      <h1 className="text-2xl font-bold text-ink">{t("quiz.title")}</h1>
 
       {phase === "setup" && (
         <SetupPhase
@@ -249,19 +261,18 @@ function SetupPhase({
   generating: boolean;
   error: string | null;
 }) {
+  const { t } = useT();
   return (
     <div className="mt-6 space-y-5">
       <Card>
-        <CardTitle>Collection</CardTitle>
-        <p className="mt-1 text-sm text-muted-fg">
-          Quiz from all your materials, or pick a specific collection.
-        </p>
+        <CardTitle>{t("quiz.collection")}</CardTitle>
+        <p className="mt-1 text-sm text-muted-fg">{t("quiz.collectionHint")}</p>
         <Select
           className="mt-3"
           value={collectionId}
           onChange={(e) => setCollectionId(e.target.value)}
         >
-          <option value="">All materials</option>
+          <option value="">{t("quiz.allMaterials")}</option>
           {collections.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -271,7 +282,7 @@ function SetupPhase({
       </Card>
 
       <Card>
-        <CardTitle>Difficulty</CardTitle>
+        <CardTitle>{t("quiz.difficulty")}</CardTitle>
         <div className="mt-3 flex gap-3">
           {DIFFICULTIES.map((d) => (
             <button
@@ -285,15 +296,15 @@ function SetupPhase({
                   : "border-hairline text-muted-fg hover:border-primary",
               )}
             >
-              <p className="font-semibold">{d.label}</p>
-              <p className="mt-0.5 text-xs text-muted-fg">{d.desc}</p>
+              <p className="font-semibold">{t(d.labelKey)}</p>
+              <p className="mt-0.5 text-xs text-muted-fg">{t(d.descKey)}</p>
             </button>
           ))}
         </div>
       </Card>
 
       <Card>
-        <CardTitle>Number of questions</CardTitle>
+        <CardTitle>{t("quiz.numQuestions")}</CardTitle>
         <div className="mt-3 flex items-center gap-3">
           {[3, 5, 7, 10].map((n) => (
             <button
@@ -318,14 +329,14 @@ function SetupPhase({
           <p>{error}</p>
           {/Upgrade|premium/i.test(error) && (
             <Link href="/pricing" className="font-semibold text-primary underline">
-              View pricing →
+              {t("quiz.viewPricing")}
             </Link>
           )}
         </div>
       )}
 
       <Button className="w-full" onClick={onStart} loading={generating}>
-        Start quiz
+        {t("quiz.start")}
       </Button>
     </div>
   );
@@ -356,6 +367,7 @@ function QuestionPhase({
   onNext: () => void;
   error: string | null;
 }) {
+  const { t } = useT();
   const q = questions[currentIdx];
   const total = questions.length;
   const progress = ((currentIdx + (feedback ? 1 : 0)) / total) * 100;
@@ -366,7 +378,7 @@ function QuestionPhase({
       {/* Progress */}
       <div className="flex items-center justify-between text-sm text-muted-fg">
         <span>
-          Question {currentIdx + 1} of {total}
+          {t("quiz.questionOf", { current: currentIdx + 1, total })}
         </span>
         {q.concept && <Badge>{q.concept}</Badge>}
       </div>
@@ -405,7 +417,7 @@ function QuestionPhase({
           <Textarea
             className="mt-4"
             rows={3}
-            placeholder="Type your answer…"
+            placeholder={t("quiz.typeAnswer")}
             value={shortAnswer}
             onChange={(e) => setShortAnswer(e.target.value)}
           />
@@ -426,11 +438,12 @@ function QuestionPhase({
                 feedback.is_correct ? "text-success" : "text-danger",
               )}
             >
-              {feedback.is_correct ? "Correct!" : "Incorrect"}
+              {feedback.is_correct ? t("quiz.correct") : t("quiz.incorrect")}
             </p>
             {!feedback.is_correct && (
               <p className="mt-1 text-sm text-ink">
-                Correct answer: <strong>{feedback.correct_answer}</strong>
+                {t("quiz.correctAnswer")}{" "}
+                <strong>{feedback.correct_answer}</strong>
               </p>
             )}
             {feedback.explanation && (
@@ -454,11 +467,11 @@ function QuestionPhase({
                 : !shortAnswer.trim()
             }
           >
-            Submit
+            {t("quiz.submit")}
           </Button>
         ) : (
           <Button size="lg" onClick={onNext}>
-            {isLast ? "See results" : "Next question"}
+            {isLast ? t("quiz.seeResults") : t("quiz.nextQuestion")}
           </Button>
         )}
       </div>
@@ -475,16 +488,17 @@ function ResultsPhase({
 }) {
   const pct = results.total > 0 ? Math.round((results.score / results.total) * 100) : 0;
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { t } = useT();
 
   return (
     <div className="mt-6">
       <Card className="p-6 text-center">
         <p className="text-5xl font-bold text-primary">{pct}%</p>
         <p className="mt-2 text-lg font-semibold text-ink">
-          {results.score} / {results.total} correct
+          {t("quiz.scoreCorrect", { score: results.score, total: results.total })}
         </p>
         <p className="mt-1 text-sm capitalize text-muted-fg">
-          {results.difficulty} difficulty
+          {t("quiz.resultsDifficulty", { difficulty: results.difficulty })}
         </p>
       </Card>
 
@@ -518,10 +532,12 @@ function ResultsPhase({
             {expanded === a.question_id && (
               <div className="border-t border-hairline px-4 py-3 text-sm text-muted-fg">
                 <p>
-                  <strong className="text-ink">Your answer:</strong> {a.user_answer ?? "—"}
+                  <strong className="text-ink">{t("quiz.yourAnswer")}</strong>{" "}
+                  {a.user_answer ?? "—"}
                 </p>
                 <p className="mt-1">
-                  <strong className="text-ink">Correct answer:</strong> {a.correct_answer}
+                  <strong className="text-ink">{t("quiz.correctAnswer")}</strong>{" "}
+                  {a.correct_answer}
                 </p>
                 {a.explanation && <p className="mt-1">{a.explanation}</p>}
                 {a.concept && (
@@ -536,7 +552,7 @@ function ResultsPhase({
       </div>
 
       <Button variant="secondary" className="mt-6 w-full" onClick={onTryAgain}>
-        Try again
+        {t("quiz.tryAgain")}
       </Button>
     </div>
   );

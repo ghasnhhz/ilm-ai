@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea, Select, Label } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
 const ACCEPT = ".pdf,.docx,.txt";
@@ -22,6 +23,7 @@ export function UploadZone({
   onUploaded: () => void | Promise<void>;
 }) {
   const { toast } = useToast();
+  const { t } = useT();
   const [tab, setTab] = useState<"file" | "paste">("file");
   const [collectionId, setCollectionId] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -34,11 +36,20 @@ export function UploadZone({
   function report(material: Material) {
     if (material.status === "failed") {
       toast(
-        `"${material.title}" failed: ${material.error ?? "unknown error"}`,
+        t("upload.failed", {
+          title: material.title,
+          error: material.error ?? t("upload.unknownError"),
+        }),
         "error",
       );
     } else {
-      toast(`Added "${material.title}" (${material.chunk_count} chunks)`, "success");
+      toast(
+        t("upload.added", {
+          title: material.title,
+          count: material.chunk_count,
+        }),
+        "success",
+      );
     }
   }
 
@@ -57,7 +68,7 @@ export function UploadZone({
       report(material);
       await onUploaded();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : "Upload failed", "error");
+      toast(e instanceof ApiError ? e.message : t("upload.uploadFailed"), "error");
     }
     setBusy(false);
   }
@@ -76,7 +87,7 @@ export function UploadZone({
       setText("");
       await onUploaded();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : "Could not save text", "error");
+      toast(e instanceof ApiError ? e.message : t("upload.saveFailed"), "error");
     }
     setBusy(false);
   }
@@ -85,22 +96,22 @@ export function UploadZone({
     <Card>
       <div className="flex gap-2">
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>
-          Upload file
+          {t("upload.tab.file")}
         </TabButton>
         <TabButton active={tab === "paste"} onClick={() => setTab("paste")}>
-          Paste text
+          {t("upload.tab.paste")}
         </TabButton>
       </div>
 
       <div className="mt-4">
-        <Label htmlFor="upload-collection">Collection</Label>
+        <Label htmlFor="upload-collection">{t("upload.collection")}</Label>
         <Select
           id="upload-collection"
           className="mt-1"
           value={collectionId}
           onChange={(e) => setCollectionId(e.target.value)}
         >
-          <option value="">Uncategorized</option>
+          <option value="">{t("upload.uncategorized")}</option>
           {collections.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -129,9 +140,9 @@ export function UploadZone({
           )}
         >
           <p className="text-sm font-medium text-ink">
-            {busy ? "Uploading…" : "Drag & drop, or click to choose"}
+            {busy ? t("upload.uploading") : t("upload.dropPrompt")}
           </p>
-          <p className="mt-1 text-xs text-muted-fg">PDF, DOCX or TXT</p>
+          <p className="mt-1 text-xs text-muted-fg">{t("upload.fileTypes")}</p>
           <input
             ref={inputRef}
             type="file"
@@ -148,13 +159,13 @@ export function UploadZone({
       ) : (
         <div className="mt-4 flex flex-col gap-3">
           <Input
-            placeholder="Title"
+            placeholder={t("upload.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <Textarea
             rows={6}
-            placeholder="Paste your notes or text here…"
+            placeholder={t("upload.pastePlaceholder")}
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
@@ -164,7 +175,7 @@ export function UploadZone({
             loading={busy}
             disabled={!title.trim() || !text.trim()}
           >
-            Add text
+            {t("upload.addText")}
           </Button>
         </div>
       )}

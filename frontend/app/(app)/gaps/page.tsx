@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/skeleton";
+import { useT } from "@/lib/i18n";
 
 type ConceptStat = {
   concept: string;
@@ -41,6 +42,7 @@ type GapsReport = {
 export default function GapsPage() {
   const { data: session, status } = useSession();
   const token = session?.accessToken;
+  const { t } = useT();
 
   const [report, setReport] = useState<GapsReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,10 +56,10 @@ export default function GapsPage() {
       const data = await apiFetch<GapsReport>("/gaps", { token });
       setReport(data);
     } catch {
-      setError("Could not load your gaps report.");
+      setError(t("gaps.loadError"));
     }
     setLoading(false);
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     void load();
@@ -75,14 +77,12 @@ export default function GapsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ink">Knowledge gaps</h1>
-      <p className="mt-1 text-sm text-muted-fg">
-        Based on every quiz you&apos;ve taken — updates as you practice more.
-      </p>
+      <h1 className="text-2xl font-bold text-ink">{t("gaps.title")}</h1>
+      <p className="mt-1 text-sm text-muted-fg">{t("gaps.subtitle")}</p>
 
       {loading && (
         <div className="mt-6">
-          <Loading label="Loading your report…" />
+          <Loading label={t("gaps.loading")} />
         </div>
       )}
       {error && <p className="mt-6 text-sm text-danger">{error}</p>}
@@ -91,9 +91,9 @@ export default function GapsPage() {
         <EmptyState
           className="mt-8"
           icon={Target}
-          title="No gaps to show yet"
-          body="Take a few quizzes and your strengths and weak spots will appear here."
-          action={<Button href="/quiz">Start a quiz</Button>}
+          title={t("gaps.emptyTitle")}
+          body={t("gaps.emptyBody")}
+          action={<Button href="/quiz">{t("gaps.startQuiz")}</Button>}
         />
       )}
 
@@ -102,7 +102,7 @@ export default function GapsPage() {
           {/* Needs work */}
           {report.gaps.length > 0 && (
             <section>
-              <h2 className="font-semibold text-warn">Needs work</h2>
+              <h2 className="font-semibold text-warn">{t("gaps.needsWork")}</h2>
               <div className="mt-3 space-y-2">
                 {report.gaps.map((g) => (
                   <div
@@ -112,12 +112,15 @@ export default function GapsPage() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-ink">{g.concept}</p>
                       <Badge variant="warn">
-                        {g.wrong_count} missed · {g.sessions} sessions
+                        {t("gaps.missedSessions", {
+                          wrong: g.wrong_count,
+                          sessions: g.sessions,
+                        })}
                       </Badge>
                     </div>
                     {g.materials.length > 0 && (
                       <p className="mt-1 text-xs text-muted-fg">
-                        From: {g.materials.join(", ")}
+                        {t("gaps.from", { materials: g.materials.join(", ") })}
                       </p>
                     )}
                   </div>
@@ -129,7 +132,7 @@ export default function GapsPage() {
           {/* What you know well */}
           {report.strong.length > 0 && (
             <section>
-              <h2 className="font-semibold text-success">What you know well</h2>
+              <h2 className="font-semibold text-success">{t("gaps.knowWell")}</h2>
               <div className="mt-3 space-y-2">
                 {report.strong.map((s) => (
                   <div
@@ -138,7 +141,11 @@ export default function GapsPage() {
                   >
                     <p className="font-medium text-ink">{s.concept}</p>
                     <Badge variant="success">
-                      {s.accuracy}% · {s.correct}/{s.total}
+                      {t("gaps.accuracyStat", {
+                        accuracy: s.accuracy,
+                        correct: s.correct,
+                        total: s.total,
+                      })}
                     </Badge>
                   </div>
                 ))}
@@ -149,7 +156,7 @@ export default function GapsPage() {
           {/* Revisit these materials */}
           {report.suggested_sections.length > 0 && (
             <section>
-              <h2 className="font-semibold text-ink">Revisit these materials</h2>
+              <h2 className="font-semibold text-ink">{t("gaps.revisit")}</h2>
               <div className="mt-3 space-y-2">
                 {report.suggested_sections.map((sec) => (
                   <Link
@@ -160,7 +167,7 @@ export default function GapsPage() {
                     <Card className="p-4 transition-colors hover:border-primary">
                       <p className="font-medium text-ink">{sec.title}</p>
                       <p className="mt-0.5 text-xs text-muted-fg">
-                        Covers: {sec.concepts.join(", ")}
+                        {t("gaps.covers", { concepts: sec.concepts.join(", ") })}
                       </p>
                     </Card>
                   </Link>
