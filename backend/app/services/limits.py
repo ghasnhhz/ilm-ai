@@ -62,6 +62,7 @@ def _upload_count(db: Session, user_id: uuid.UUID) -> int:
 
 
 def get_usage(db: Session, user_id: uuid.UUID) -> dict:
+    sub = _subscription(db, user_id)
     premium = is_premium(db, user_id)
     return {
         "tier": "premium" if premium else "free",
@@ -70,6 +71,8 @@ def get_usage(db: Session, user_id: uuid.UUID) -> dict:
         "uploads": _upload_count(db, user_id),
         "uploads_limit": None if premium else FREE_UPLOADS,
         "price_label": settings.premium_price_label,
+        "current_period_end": sub.current_period_end if premium and sub else None,
+        "cancel_at_period_end": bool(sub.cancel_at_period_end) if premium and sub else False,
     }
 
 
@@ -125,4 +128,5 @@ def deactivate(db: Session, user_id: uuid.UUID) -> None:
         return
     sub.tier = "free"
     sub.status = "canceled"
+    sub.cancel_at_period_end = False
     db.commit()
