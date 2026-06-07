@@ -14,11 +14,13 @@ import type {
 import { ChatWindow } from "@/components/chat-window";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/skeleton";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const token = session?.accessToken;
+  const { t } = useT();
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -80,8 +82,8 @@ export default function ChatPage() {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       setError(
         e instanceof ApiError && e.status === 503
-          ? "The AI companion is not configured yet (missing API key)."
-          : "Something went wrong. Please try again.",
+          ? t("chat.notConfigured")
+          : t("chat.genericError"),
       );
     }
     setSending(false);
@@ -94,10 +96,10 @@ export default function ChatPage() {
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-ink">Companion</h1>
+        <h1 className="text-2xl font-bold text-ink">{t("chat.title")}</h1>
         <Button variant="secondary" size="sm" onClick={newChat}>
           <Plus className="h-4 w-4" aria-hidden="true" />
-          New chat
+          {t("chat.newChat")}
         </Button>
       </div>
 
@@ -114,7 +116,7 @@ export default function ChatPage() {
                   : "border-hairline text-muted-fg hover:border-primary",
               )}
             >
-              {s.title || "Untitled"}
+              {s.title || t("chat.untitled")}
             </button>
           ))}
         </div>

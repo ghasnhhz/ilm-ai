@@ -9,6 +9,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { useT } from "@/lib/i18n";
 
 const STATUS_VARIANT: Record<
   Material["status"],
@@ -18,6 +19,12 @@ const STATUS_VARIANT: Record<
   processing: "warn",
   failed: "danger",
 };
+
+const STATUS_KEY = {
+  ready: "material.status.ready",
+  processing: "material.status.processing",
+  failed: "material.status.failed",
+} as const;
 
 export function MaterialList({
   token,
@@ -31,11 +38,14 @@ export function MaterialList({
   onChange: () => void | Promise<void>;
 }) {
   const { toast } = useToast();
+  const { t } = useT();
   const [pending, setPending] = useState<Material | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const collectionName = (id: string | null) =>
-    id ? collections.find((c) => c.id === id)?.name ?? "Unknown" : "Uncategorized";
+    id
+      ? collections.find((c) => c.id === id)?.name ?? t("material.unknown")
+      : t("material.uncategorized");
 
   async function confirmRemove() {
     if (!token || !pending) return;
@@ -43,22 +53,20 @@ export function MaterialList({
     try {
       await apiFetch(`/materials/${pending.id}`, { token, method: "DELETE" });
       await onChange();
-      toast(`Deleted "${pending.title}"`, "success");
+      toast(t("material.deleted", { title: pending.title }), "success");
       setPending(null);
     } catch {
-      toast("Could not delete material", "error");
+      toast(t("material.deleteFailed"), "error");
     }
     setDeleting(false);
   }
 
   return (
     <Card>
-      <CardTitle>Your materials</CardTitle>
+      <CardTitle>{t("material.title")}</CardTitle>
 
       {materials.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-fg">
-          Nothing yet — upload a file or paste text to get started.
-        </p>
+        <p className="mt-3 text-sm text-muted-fg">{t("material.empty")}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {materials.map((m) => (
@@ -76,7 +84,8 @@ export function MaterialList({
                     <p className="truncate font-medium text-ink">{m.title}</p>
                     <p className="mt-0.5 text-xs text-muted-fg">
                       {m.file_type.toUpperCase()} ·{" "}
-                      {collectionName(m.collection_id)} · {m.chunk_count} chunks
+                      {collectionName(m.collection_id)} ·{" "}
+                      {t("material.chunks", { count: m.chunk_count })}
                     </p>
                     {m.status === "failed" && m.error && (
                       <p className="mt-1 text-xs text-danger">{m.error}</p>
@@ -84,10 +93,12 @@ export function MaterialList({
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Badge variant={STATUS_VARIANT[m.status]}>{m.status}</Badge>
+                  <Badge variant={STATUS_VARIANT[m.status]}>
+                    {t(STATUS_KEY[m.status])}
+                  </Badge>
                   <button
                     onClick={() => setPending(m)}
-                    aria-label={`Delete ${m.title}`}
+                    aria-label={t("material.deleteAria", { title: m.title })}
                     className="rounded p-1 text-muted-fg hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -101,13 +112,11 @@ export function MaterialList({
 
       <ConfirmDialog
         open={pending !== null}
-        title="Delete material?"
+        title={t("material.deleteTitle")}
         message={
-          pending
-            ? `Delete "${pending.title}"? This removes its chunks and can't be undone.`
-            : ""
+          pending ? t("material.deleteMessage", { title: pending.title }) : ""
         }
-        confirmLabel="Delete"
+        confirmLabel={t("common.delete")}
         danger
         loading={deleting}
         onConfirm={confirmRemove}

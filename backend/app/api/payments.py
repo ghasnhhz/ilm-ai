@@ -32,7 +32,30 @@ def cancel(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    limits.deactivate(db, current_user.id)
+    # Stripe subscribers cancel at period end (keep premium until it lapses); anyone
+    # without a Stripe subscription (e.g. Payme) is downgraded immediately.
+    try:
+        scheduled = stripe_service.schedule_cancel(db, current_user.id)
+    except StripeUnavailableError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
+        )
+    if not scheduled:
+        limits.deactivate(db, current_user.id)
+    return {"ok": True}
+
+
+@router.post("/resume")
+def resume(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        stripe_service.resume(db, current_user.id)
+    except StripeUnavailableError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)
+        )
     return {"ok": True}
 
 

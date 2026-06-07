@@ -30,10 +30,12 @@ export function isLocale(value: string | null | undefined): value is Locale {
   return !!value && (LOCALES as readonly string[]).includes(value);
 }
 
+type TVars = Record<string, string | number>;
+
 type I18nContextValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: TKey) => string;
+  t: (key: TKey, vars?: TVars) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -84,7 +86,15 @@ export function LangProvider({
   }, []);
 
   const t = useCallback(
-    (key: TKey) => DICTS[locale][key] ?? en[key] ?? key,
+    (key: TKey, vars?: TVars) => {
+      let s: string = DICTS[locale][key] ?? en[key] ?? key;
+      if (vars) {
+        for (const [k, v] of Object.entries(vars)) {
+          s = s.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+        }
+      }
+      return s;
+    },
     [locale],
   );
 

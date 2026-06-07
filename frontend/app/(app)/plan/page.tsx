@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/skeleton";
+import { useT } from "@/lib/i18n";
 
 type PlanDay = {
   day: number;
@@ -37,6 +38,7 @@ type LearningPlanOut = {
 export default function PlanPage() {
   const { data: session, status } = useSession();
   const token = session?.accessToken;
+  const { t } = useT();
 
   const [data, setData] = useState<LearningPlanOut | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,10 +52,10 @@ export default function PlanPage() {
       const res = await apiFetch<LearningPlanOut>("/plan", { token });
       setData(res);
     } catch {
-      setError("Could not load your plan.");
+      setError(t("plan.loadError"));
     }
     setLoading(false);
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     void load();
@@ -72,13 +74,11 @@ export default function PlanPage() {
       setData(res);
     } catch (e) {
       setError(
-        e instanceof ApiError
-          ? e.message
-          : "Could not generate a plan. Upload materials and set a goal first.",
+        e instanceof ApiError ? e.message : t("plan.generateError"),
       );
     }
     setGenerating(false);
-  }, [token]);
+  }, [token, t]);
 
   if (status === "loading") {
     return <Loading />;
@@ -88,11 +88,11 @@ export default function PlanPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ink">Learning plan</h1>
+      <h1 className="text-2xl font-bold text-ink">{t("plan.title")}</h1>
 
       {loading && (
         <div className="mt-6">
-          <Loading label="Loading your plan…" />
+          <Loading label={t("plan.loading")} />
         </div>
       )}
       {error && <p className="mt-6 text-sm text-danger">{error}</p>}
@@ -101,15 +101,15 @@ export default function PlanPage() {
         <EmptyState
           className="mt-8"
           icon={CalendarDays}
-          title="No plan yet"
-          body="Generate a day-by-day plan from your materials, your goal, and the gaps from your quizzes. Set a goal on your profile first for a date-aware plan."
+          title={t("plan.emptyTitle")}
+          body={t("plan.emptyBody")}
           action={
             <div className="flex flex-col items-center gap-3">
               <Button onClick={generate} loading={generating}>
-                Generate my plan
+                {t("plan.generate")}
               </Button>
               <Link href="/profile" className="text-sm text-primary underline">
-                Set your goal
+                {t("plan.setGoal")}
               </Link>
             </div>
           }
@@ -120,16 +120,14 @@ export default function PlanPage() {
         <div className="mt-6">
           {data?.stale && (
             <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-warn/30 bg-warn/5 p-4">
-              <p className="text-sm text-warn">
-                Your materials or results changed — this plan may be outdated.
-              </p>
+              <p className="text-sm text-warn">{t("plan.staleWarning")}</p>
               <Button
                 size="sm"
                 className="shrink-0"
                 onClick={generate}
                 loading={generating}
               >
-                Regenerate
+                {t("plan.regenerate")}
               </Button>
             </div>
           )}
@@ -138,7 +136,7 @@ export default function PlanPage() {
             <p className="text-ink">{plan.summary}</p>
             {data?.target_date && (
               <p className="mt-2 text-xs uppercase tracking-wide text-muted-fg">
-                Target: {data.target_date}
+                {t("plan.target", { date: data.target_date })}
               </p>
             )}
             {!data?.stale && (
@@ -147,7 +145,7 @@ export default function PlanPage() {
                 disabled={generating}
                 className="mt-3 text-sm font-semibold text-primary disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                {generating ? "Regenerating…" : "Regenerate plan"}
+                {generating ? t("plan.regenerating") : t("plan.regeneratePlan")}
               </button>
             )}
           </Card>

@@ -14,6 +14,12 @@ class UsageOut(BaseModel):
     uploads: int
     uploads_limit: int | None
     price_label: str
+    # When the current premium period ends (i.e. the next renewal date). None on
+    # the free tier or until a subscription/invoice webhook fills it in.
+    current_period_end: datetime | None = None
+    # True when cancellation is scheduled: premium stays until current_period_end,
+    # then it won't renew.
+    cancel_at_period_end: bool = False
 
 
 class PaymentEventOut(BaseModel):

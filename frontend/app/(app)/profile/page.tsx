@@ -10,6 +10,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Field, Textarea, Input } from "@/components/ui/input";
 import { Loading } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { useT } from "@/lib/i18n";
 
 type Goal = { goal_text: string; target_date: string | null };
 type Me = {
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const token = session?.accessToken;
   const { toast } = useToast();
+  const { t } = useT();
 
   const [me, setMe] = useState<Me | null>(null);
   const [goalText, setGoalText] = useState("");
@@ -84,9 +86,9 @@ export default function ProfilePage() {
         body: { goal_text: goalText, target_date: targetDate || null },
       });
       await load();
-      toast("Goal saved", "success");
+      toast(t("profile.goalSaved"), "success");
     } catch {
-      toast("Could not save goal", "error");
+      toast(t("profile.goalSaveError"), "error");
     }
     setSaving(false);
   }
@@ -96,48 +98,54 @@ export default function ProfilePage() {
   }
 
   const stats = [
-    { label: "Sessions completed", value: quizStats?.sessions_completed ?? "—" },
-    { label: "Topics covered", value: quizStats?.topics_covered ?? "—" },
     {
-      label: "Knowledge score",
+      label: t("profile.statsSessions"),
+      value: quizStats?.sessions_completed ?? "—",
+    },
+    { label: t("profile.statsTopics"), value: quizStats?.topics_covered ?? "—" },
+    {
+      label: t("profile.statsScore"),
       value: quizStats ? `${quizStats.knowledge_score}%` : "—",
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-ink">Your profile</h1>
+    <div className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold text-ink">{t("profile.title")}</h1>
+        <p className="text-sm text-muted-fg">{t("profile.subtitle")}</p>
+      </header>
 
       <Card>
-        <p className="text-lg font-semibold text-ink">{me?.name || "Learner"}</p>
+        <p className="text-lg font-semibold text-ink">
+          {me?.name || t("profile.learner")}
+        </p>
         <p className="text-sm text-muted-fg">{me?.email}</p>
         <p className="mt-1 text-xs uppercase tracking-wide text-muted-fg">
-          {me?.provider} account
+          {t("profile.accountSuffix", { provider: me?.provider ?? "" })}
         </p>
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
         {stats.map((s) => (
-          <Card key={s.label} className="p-3 text-center">
-            <p className="text-xl font-bold text-primary">{s.value}</p>
+          <Card key={s.label} className="p-4 text-center">
+            <p className="text-2xl font-bold text-primary">{s.value}</p>
             <p className="mt-1 text-xs text-muted-fg">{s.label}</p>
           </Card>
         ))}
       </div>
 
       <Card>
-        <CardTitle>Your learning goal</CardTitle>
-        <p className="mt-1 text-sm text-muted-fg">
-          What do you want to achieve, and by when?
-        </p>
+        <CardTitle>{t("profile.goalTitle")}</CardTitle>
+        <p className="mt-1 text-sm text-muted-fg">{t("profile.goalHint")}</p>
         <Textarea
           className="mt-3"
           rows={3}
-          placeholder="e.g. Understand cloud architecture well enough to pass the AWS exam"
+          placeholder={t("profile.goalPlaceholder")}
           value={goalText}
           onChange={(e) => setGoalText(e.target.value)}
         />
-        <Field label="Target date" className="mt-3">
+        <Field label={t("profile.targetDate")} className="mt-3">
           {(props) => (
             <Input
               {...props}
@@ -149,42 +157,41 @@ export default function ProfilePage() {
         </Field>
         <div className="mt-3">
           <Button onClick={saveGoal} loading={saving} disabled={!goalText.trim()}>
-            Save goal
+            {t("profile.saveGoal")}
           </Button>
         </div>
       </Card>
 
       <Card>
-        <CardTitle>Telegram</CardTitle>
+        <CardTitle>{t("profile.telegram")}</CardTitle>
         {telegram?.linked ? (
           <div className="mt-3 space-y-2 text-sm text-muted-fg">
             <p className="flex items-center gap-2 font-medium text-success">
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-              Connected
+              {t("profile.connected")}
             </p>
             <p className="flex items-center gap-2">
               <Flame className="h-4 w-4 text-accent" aria-hidden="true" />
-              Current streak: {telegram.current_streak} day(s)
+              {t("profile.currentStreak", { days: telegram.current_streak })}
             </p>
             <p className="flex items-center gap-2">
               <Trophy className="h-4 w-4 text-accent" aria-hidden="true" />
-              Longest streak: {telegram.longest_streak} day(s)
+              {t("profile.longestStreak", { days: telegram.longest_streak })}
             </p>
             <p className="flex items-center gap-2">
               <Clock className="h-4 w-4" aria-hidden="true" />
               {telegram.reminder
-                ? `Daily reminder at ${String(telegram.reminder.hour).padStart(2, "0")}:${String(
-                    telegram.reminder.minute,
-                  ).padStart(2, "0")} (set it in the bot with /reminder)`
-                : "No reminder set — message the bot /reminder HH:MM"}
+                ? t("profile.reminderAt", {
+                    time: `${String(telegram.reminder.hour).padStart(2, "0")}:${String(
+                      telegram.reminder.minute,
+                    ).padStart(2, "0")}`,
+                  })
+                : t("profile.noReminder")}
             </p>
           </div>
         ) : (
           <div className="mt-2">
-            <p className="text-sm text-muted-fg">
-              Link Telegram to quiz yourself, get daily reminders, and build a
-              streak — without opening the app.
-            </p>
+            <p className="text-sm text-muted-fg">{t("profile.telegramPitch")}</p>
             {linkUrl ? (
               <Button
                 href={linkUrl}
@@ -192,22 +199,16 @@ export default function ProfilePage() {
                 rel="noopener noreferrer"
                 className="mt-3"
               >
-                Open in Telegram to finish linking
+                {t("profile.openTelegram")}
               </Button>
             ) : (
               <Button variant="secondary" className="mt-3" onClick={connectTelegram}>
-                Connect Telegram
+                {t("profile.connectTelegram")}
               </Button>
             )}
           </div>
         )}
       </Card>
-
-      <div className="pt-2">
-        <Button href="/billing" variant="ghost" size="sm">
-          Billing &amp; subscription
-        </Button>
-      </div>
     </div>
   );
 }
