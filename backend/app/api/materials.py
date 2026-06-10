@@ -21,7 +21,7 @@ from app.schemas.material import ChunkPreview, MaterialDetail, MaterialOut, Past
 from app.services import limits, plan_agent, storage
 from app.services.limits import LimitExceeded
 from app.services.embeddings import embed_chunks
-from app.services.ingest import SUPPORTED_TYPES, chunk_text, extract_text
+from app.services.ingest import ALL_SUPPORTED_TYPES, chunk_text, extract_text
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -29,6 +29,11 @@ CONTENT_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "txt": "text/plain",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "webp": "image/webp",
+    "gif": "image/gif",
 }
 PREVIEW_CHUNKS = 5
 PREVIEW_CHARS = 300
@@ -159,10 +164,10 @@ def upload_material(
 
     filename = file.filename or "upload"
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    if ext not in SUPPORTED_TYPES:
+    if ext not in ALL_SUPPORTED_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file type '.{ext}'. Allowed: PDF, DOCX, TXT.",
+            detail=f"Unsupported file type '.{ext}'. Allowed: PDF, DOCX, TXT, or an image (PNG/JPG/WEBP).",
         )
 
     coll_id = _parse_uuid(collection_id)
