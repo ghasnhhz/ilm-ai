@@ -163,8 +163,13 @@ export const uz: Partial<Record<TKey, string>> = {
   "profile.longestStreak": "Eng uzun seriya: {days} kun",
   "profile.reminderAt":
     "Har kunlik eslatma {time} da (botda /reminder orqali belgilang)",
-  "profile.noReminder":
-    "Eslatma belgilanmagan — botga /reminder SS:DD yuboring",
+  "profile.noReminder": "Eslatma hali belgilanmagan",
+  "profile.reminderSetTitle": "Kunlik eslatma vaqti",
+  "profile.reminderSave": "Saqlash",
+  "profile.reminderClear": "Tozalash",
+  "profile.reminderSaved": "Eslatma saqlandi",
+  "profile.reminderCleared": "Eslatma o'chirildi",
+  "profile.reminderSaveError": "Eslatmani saqlab bo'lmadi",
   "profile.telegramPitch":
     "O'zingizni sinash, kunlik eslatmalar olish va seriya yig'ish uchun Telegramni ulang — ilovani ochmasdan.",
   "profile.openTelegram": "Ulashni yakunlash uchun Telegramda oching",

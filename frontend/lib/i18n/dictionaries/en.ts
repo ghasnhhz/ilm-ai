@@ -161,7 +161,13 @@ export const en = {
   "profile.longestStreak": "Longest streak: {days} day(s)",
   "profile.reminderAt":
     "Daily reminder at {time} (set it in the bot with /reminder)",
-  "profile.noReminder": "No reminder set — message the bot /reminder HH:MM",
+  "profile.noReminder": "No reminder set yet",
+  "profile.reminderSetTitle": "Daily reminder time",
+  "profile.reminderSave": "Save",
+  "profile.reminderClear": "Clear",
+  "profile.reminderSaved": "Reminder saved",
+  "profile.reminderCleared": "Reminder cleared",
+  "profile.reminderSaveError": "Could not save the reminder",
   "profile.telegramPitch":
     "Link Telegram to quiz yourself, get daily reminders, and build a streak — without opening the app.",
   "profile.openTelegram": "Open in Telegram to finish linking",
