@@ -55,7 +55,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
     )
     db.add(user)
     db.commit()
-    db.refresh(user)
+    # No refresh: User.id is generated client-side (uuid4) and the session keeps
+    # attributes after commit, so minting tokens needs no extra DB round-trip.
     return _tokens_for(user)
 
 
@@ -106,7 +107,6 @@ def oauth_bridge(
         user = User(email=payload.email, name=payload.name, provider=payload.provider)
         db.add(user)
         db.commit()
-        db.refresh(user)
     return _tokens_for(user)
 
 
