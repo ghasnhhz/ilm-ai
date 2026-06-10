@@ -1,6 +1,8 @@
-"""Builds the grounded, trilingual Socratic prompt and calls Claude."""
+"""Builds the grounded, trilingual Socratic prompt and calls the LLM."""
 
-from app.llm.anthropic_client import ChatResult, generate
+from collections.abc import Iterator
+
+from app.llm.anthropic_client import ChatResult, generate, stream
 from app.services.rag import RetrievedChunk
 
 SNIPPET_CHARS = 300
@@ -44,15 +46,28 @@ def _citations(chunks: list[RetrievedChunk]) -> list[dict]:
     ]
 
 
+def _build_messages(query: str, history: list[dict], chunks: list[RetrievedChunk]) -> list[dict]:
+    augmented = (
+        f"Sources:\n{_context_block(chunks)}\n\n"
+        f"Learner's question: {query}"
+    )
+    return [*history, {"role": "user", "content": augmented}]
+
+
 def answer(
     query: str,
     history: list[dict],
     chunks: list[RetrievedChunk],
 ) -> tuple[ChatResult, list[dict]]:
-    augmented = (
-        f"Sources:\n{_context_block(chunks)}\n\n"
-        f"Learner's question: {query}"
-    )
-    messages = [*history, {"role": "user", "content": augmented}]
-    result = generate(SYSTEM_PROMPT, messages)
+    result = generate(SYSTEM_PROMPT, _build_messages(query, history, chunks))
     return result, _citations(chunks)
+
+
+def answer_stream(
+    query: str,
+    history: list[dict],
+    chunks: list[RetrievedChunk],
+) -> tuple[Iterator[str], list[dict]]:
+    """Stream the answer text as deltas; citations are known up front from retrieval."""
+    tokens = stream(SYSTEM_PROMPT, _build_messages(query, history, chunks))
+    return tokens, _citations(chunks)
