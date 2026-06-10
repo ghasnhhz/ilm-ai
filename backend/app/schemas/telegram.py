@@ -76,6 +76,20 @@ class BotQuizAnswerResponse(BaseModel):
     streak: int | None = None
 
 
+class BotFlashcardGenerateRequest(BaseModel):
+    chat_id: int
+
+
+class BotFlashcard(BaseModel):
+    front: str
+    back: str
+    concept: str = ""
+
+
+class BotFlashcardGenerateResponse(BaseModel):
+    flashcards: list[BotFlashcard]
+
+
 class ReminderRequest(BaseModel):
     chat_id: int
     hour: int | None = Field(default=None, ge=0, le=23)
