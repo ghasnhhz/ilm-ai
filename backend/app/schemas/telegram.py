@@ -22,6 +22,13 @@ class ConnectionOut(BaseModel):
     reminder: ReminderInfo | None = None
 
 
+class WebReminderRequest(BaseModel):
+    """Set/clear the daily reminder from the web app (user comes from the JWT)."""
+
+    hour: int | None = Field(default=None, ge=0, le=23)
+    minute: int | None = Field(default=None, ge=0, le=59)
+
+
 # --- Bot (shared-secret-auth) ---
 
 class LinkRequest(BaseModel):

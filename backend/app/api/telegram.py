@@ -22,6 +22,7 @@ from app.schemas.telegram import (
     ReminderInfo,
     ReminderRequest,
     StatusOut,
+    WebReminderRequest,
 )
 from app.services import limits
 from app.services import quiz as quiz_service
@@ -73,6 +74,25 @@ def connection(
         longest_streak=link.longest_streak,
         reminder=_reminder_info(link),
     )
+
+
+@router.put("/reminder", response_model=ReminderInfo | None)
+def set_reminder_web(
+    payload: WebReminderRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReminderInfo | None:
+    # A time needs both fields; if either is missing, treat it as clearing.
+    hour, minute = payload.hour, payload.minute
+    if hour is None or minute is None:
+        hour = minute = None
+    try:
+        telegram_service.set_reminder_for_user(db, current_user.id, hour, minute)
+    except LinkError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    if hour is None or minute is None:
+        return None
+    return ReminderInfo(hour=hour, minute=minute)
 
 
 # --- Bot endpoints (shared secret) -------------------------------------------
