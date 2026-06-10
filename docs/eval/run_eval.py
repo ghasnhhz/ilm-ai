@@ -51,15 +51,21 @@ def to_chunks(material_context: list[dict]):
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the companion eval set.")
     parser.add_argument("--dry-run", action="store_true", help="Don't call the model.")
+    parser.add_argument(
+        "--out",
+        metavar="PATH",
+        help="On a live run, also write each collected answer to this JSONL file.",
+    )
     args = parser.parse_args()
 
     samples = load_samples()
-    has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    # Either configured provider can answer; Groq is primary, Anthropic the fallback.
+    has_key = bool(os.environ.get("GROQ_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
     dry = args.dry_run or not has_key
 
     print(f"Loaded {len(samples)} eval samples from {SAMPLES.name}")
     if dry:
-        reason = "--dry-run" if args.dry_run else "ANTHROPIC_API_KEY not set"
+        reason = "--dry-run" if args.dry_run else "no GROQ_API_KEY / ANTHROPIC_API_KEY set"
         print(f"DRY RUN ({reason}) — showing the planned run without calling the model.\n")
     else:
         print("LIVE RUN — calling the companion for each sample.\n")
@@ -67,25 +73,47 @@ def main() -> int:
     if not dry:
         from app.services import companion
 
-    for s in samples:
-        print("=" * 72)
-        print(f"[{s['id']}]  lang={s['language']}")
-        print(f"Q: {s['question']}")
-        print(f"Expected: {s['expected_behavior']}")
-        print(f"Gold scores: {s['scores']}")
-        if dry:
-            print("Model answer: <skipped>")
-        else:
-            chunks = to_chunks(s["material_context"])
-            result, citations = companion.answer(s["question"], [], chunks)
-            print(f"Model answer: {result.text}")
-            print(f"Citations: {[c['material_title'] for c in citations]}")
-            print(f"Tokens: in={result.input_tokens} out={result.output_tokens}")
-        print()
+    out_f = open(args.out, "w", encoding="utf-8") if (args.out and not dry) else None
+    try:
+        for s in samples:
+            print("=" * 72)
+            print(f"[{s['id']}]  lang={s['language']}")
+            print(f"Q: {s['question']}")
+            print(f"Expected: {s['expected_behavior']}")
+            print(f"Gold scores: {s['scores']}")
+            if dry:
+                print("Model answer: <skipped>")
+            else:
+                chunks = to_chunks(s["material_context"])
+                result, citations = companion.answer(s["question"], [], chunks)
+                print(f"Model answer: {result.text}")
+                print(f"Citations: {[c['material_title'] for c in citations]}")
+                print(f"Tokens: in={result.input_tokens} out={result.output_tokens}")
+                if out_f is not None:
+                    out_f.write(
+                        json.dumps(
+                            {
+                                "id": s["id"],
+                                "language": s["language"],
+                                "question": s["question"],
+                                "answer": result.text,
+                                "citations": [c["material_title"] for c in citations],
+                                "input_tokens": result.input_tokens,
+                                "output_tokens": result.output_tokens,
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
+            print()
+    finally:
+        if out_f is not None:
+            out_f.close()
+            print(f"Wrote collected answers to {args.out}")
 
     print("=" * 72)
     print("Compare each model answer to 'Expected' using rubric.md and record scores.")
-    print("Target for full evaluation: >=50 rated samples (see rubric.md).")
+    print(f"Collected {len(samples)} companion responses (target: >=50; see rubric.md).")
     return 0
 
 

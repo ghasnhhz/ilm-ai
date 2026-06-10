@@ -27,11 +27,14 @@ From the repo root with the backend venv active:
 # Dry run — no API calls, prints the plan and gold scores
 python docs/eval/run_eval.py --dry-run
 
-# Live run — needs ANTHROPIC_API_KEY; prints each model answer + tokens
-ANTHROPIC_API_KEY=sk-... python docs/eval/run_eval.py
+# Live run — needs GROQ_API_KEY (primary) or ANTHROPIC_API_KEY (fallback)
+GROQ_API_KEY=gsk_... python docs/eval/run_eval.py
+
+# Live run that also collects every answer to a JSONL file
+GROQ_API_KEY=gsk_... python docs/eval/run_eval.py --out docs/eval/results.jsonl
 ```
 
-Without `ANTHROPIC_API_KEY` the script automatically falls back to a dry run.
+Without a provider key the script automatically falls back to a dry run.
 
 ## Scoring
 For a live run, compare each printed **Model answer** to the sample's
@@ -39,7 +42,8 @@ For a live run, compare each printed **Model answer** to the sample's
 `samples.jsonl` are reference/gold ratings for the intended behaviour.
 
 ## Status / next steps
-This is a **starter set (~6 samples)** spanning English, Russian, and Uzbek, and both
-the grounded and out-of-material (honesty) cases. The Phase 9 goal is **≥50 rated
-samples** — expand by appending rows to `samples.jsonl` (no code change required),
-keeping the languages and the grounded-vs-honest split balanced.
+The set now holds **50 rated samples** balanced across English, Russian, and Uzbek
+(17/17/16) and across case types: grounded recall, out-of-material honesty,
+`[Outside knowledge]` mixed cases, language-match, Socratic tone, and multi-chunk
+synthesis. Grow it further by appending rows to `samples.jsonl` (no code change
+required), keeping the languages and the grounded-vs-honest split balanced.
