@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -9,12 +9,15 @@ from app.core.db import Base
 
 
 class LLMLog(Base):
-    """One row per LLM / embedding call: which model, how many tokens, how long.
+    """One row per LLM / embedding call: which model, how many tokens, how long,
+    plus the (truncated) prompt and response text.
 
     Written by ``app.llm.logging.record_llm_call`` from inside the llm/ layer so it
     captures every Claude and embedding call without threading state through services.
     ``user_id`` and ``endpoint`` are nullable because some calls (e.g. the startup
-    embedding warmup) happen outside any authenticated request.
+    embedding warmup) happen outside any authenticated request. ``prompt`` and
+    ``response`` are nullable because non-chat calls (e.g. embeddings) carry no
+    meaningful text.
     """
 
     __tablename__ = "llm_logs"
@@ -35,6 +38,8 @@ class LLMLog(Base):
     tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     latency_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     endpoint: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    response: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
