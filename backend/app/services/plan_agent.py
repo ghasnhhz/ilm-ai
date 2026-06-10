@@ -1,15 +1,16 @@
 """Learning-plan agent.
 
-A LangChain tool-calling agent composes four tools into a day-by-day study plan:
+Composes three inputs into a day-by-day study plan in a fixed order:
 
-- ``get_knowledge_gaps``  — what the learner keeps getting wrong (reuses gaps.py)
-- ``list_topics``         — the materials they've uploaded, by collection
-- ``get_days_until_goal`` — time left before their target date
-- ``generate_plan``       — turns those inputs into the structured plan JSON
+- knowledge gaps      — what the learner keeps getting wrong (reuses gaps.py)
+- topics              — the materials they've uploaded, by collection
+- days-until-goal     — time left before their target date
 
-The model orchestrates the calls; ``generate_plan`` produces the artifact. We read the
-plan straight out of that tool's return value (via the executor's intermediate steps)
-rather than trusting the model to echo a large JSON blob back verbatim.
+These feed a single ``generate_plan`` LLM call that produces the structured plan
+JSON. The sequence was previously orchestrated by a LangChain tool-calling agent
+whose prompt forced this exact order; it now runs as a direct composition so the one
+LLM call goes through the shared ``anthropic_client`` chokepoint (Groq primary,
+Anthropic fallback) and no longer hard-requires a live Anthropic key.
 """
 
 import json
@@ -20,17 +21,13 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.llm import anthropic_client
-from app.llm.anthropic_client import AnthropicUnavailableError
-from app.llm.logging import record_llm_call
 from app.models.material import Collection, Material
 from app.models.plan import LearningPlan
 from app.models.user import UserGoal
 from app.services import gaps as gaps_service
 
 PLAN_MAX_TOKENS = 4096
-AGENT_MAX_TOKENS = 1024
 
 
 def _extract_json_object(text: str) -> dict:
@@ -122,125 +119,36 @@ def _generate_plan_json(topics: str, gaps: str, days: str) -> str:
     return result.text
 
 
-def _build_tools(db: Session, user_id: uuid.UUID):
-    """Build the four agent tools, closing over the db session and user id."""
-    from langchain_core.tools import tool
+def _compose_plan(topics: list[dict], gaps: dict, goal_info: dict) -> dict:
+    """Compose the plan from the three inputs the agent always gathered, in order.
 
-    @tool
-    def get_knowledge_gaps() -> str:
-        """Return the learner's weak concepts (gaps) and strengths as JSON."""
-        return json.dumps(gaps_service.compute_gaps(db, user_id))
-
-    @tool
-    def list_topics() -> str:
-        """Return the learner's uploaded materials grouped by collection, as JSON."""
-        return json.dumps(topics_for(db, user_id))
-
-    @tool
-    def get_days_until_goal() -> str:
-        """Return the learner's goal text and the number of days until the target date."""
-        return json.dumps(days_until_goal(db, user_id))
-
-    @tool
-    def generate_plan(topics: str, gaps: str, days: str) -> str:
-        """Generate the day-by-day study plan JSON from topics, gaps, and days available."""
-        return _generate_plan_json(topics, gaps, days)
-
-    return [get_knowledge_gaps, list_topics, get_days_until_goal, generate_plan]
-
-
-def _make_usage_callback():
-    """A best-effort LangChain callback that logs the agent's Claude calls.
-
-    ChatAnthropic surfaces token usage in different places across LC versions, so we
-    probe a few and fall back to zero tokens — we still capture that a call happened.
+    The previous LangChain tool-calling agent forced this exact sequence via its
+    system prompt — gather knowledge gaps, topics, and days-until-goal, then call
+    generate_plan with all three — so composing the helpers directly is behaviourally
+    identical while routing the single LLM call through the Groq chokepoint
+    (``anthropic_client.complete``) instead of hard-requiring a live Anthropic key.
+    ``ensure_ascii=False`` keeps Russian/Uzbek material titles readable in the prompt.
     """
-    from langchain_core.callbacks import BaseCallbackHandler
-
-    class _UsageLogger(BaseCallbackHandler):
-        def on_llm_end(self, response, **kwargs) -> None:
-            input_tokens = output_tokens = 0
-            usage = (response.llm_output or {}).get("usage") if response.llm_output else None
-            if not usage:
-                try:
-                    msg = response.generations[0][0].message
-                    usage = getattr(msg, "usage_metadata", None) or getattr(
-                        msg, "response_metadata", {}
-                    ).get("usage")
-                except (AttributeError, IndexError):
-                    usage = None
-            if usage:
-                input_tokens = usage.get("input_tokens", 0)
-                output_tokens = usage.get("output_tokens", 0)
-            record_llm_call(
-                kind="plan_agent",
-                model=settings.anthropic_model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                latency_ms=0,
-            )
-
-    return _UsageLogger()
-
-
-def _run_agent(db: Session, user_id: uuid.UUID) -> dict:
-    from langchain.agents import AgentExecutor, create_tool_calling_agent
-    from langchain_anthropic import ChatAnthropic
-    from langchain_core.prompts import ChatPromptTemplate
-
-    tools = _build_tools(db, user_id)
-    llm = ChatAnthropic(
-        model=settings.anthropic_model,
-        api_key=settings.anthropic_api_key,
-        max_tokens=AGENT_MAX_TOKENS,
+    raw = _generate_plan_json(
+        json.dumps(topics, ensure_ascii=False),
+        json.dumps(gaps, ensure_ascii=False),
+        json.dumps(goal_info, ensure_ascii=False),
     )
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are a learning-plan agent. To build the plan you MUST: "
-                "1) call get_knowledge_gaps, 2) call list_topics, "
-                "3) call get_days_until_goal, then 4) call generate_plan passing the "
-                "results of the first three as its topics, gaps, and days arguments. "
-                "Return the generate_plan output as your final answer.",
-            ),
-            ("human", "Build my personalized learning plan."),
-            ("placeholder", "{agent_scratchpad}"),
-        ]
-    )
-    agent = create_tool_calling_agent(llm, tools, prompt)
-    executor = AgentExecutor(
-        agent=agent, tools=tools, return_intermediate_steps=True, max_iterations=8
-    )
-    result = executor.invoke({}, config={"callbacks": [_make_usage_callback()]})
-
-    # Prefer the generate_plan tool's own return value over the model's final text.
-    raw = None
-    for action, observation in result.get("intermediate_steps", []):
-        if getattr(action, "tool", None) == "generate_plan":
-            raw = observation
-    if raw is None:
-        raw = result.get("output", "")
-    if isinstance(raw, list):  # some LC versions wrap output in content blocks
-        raw = " ".join(
-            part.get("text", "") if isinstance(part, dict) else str(part) for part in raw
-        )
     return _extract_json_object(raw)
 
 
 def generate_learning_plan(db: Session, user_id: uuid.UUID) -> LearningPlan:
-    if not settings.anthropic_api_key:
-        raise AnthropicUnavailableError(
-            "ANTHROPIC_API_KEY is not configured; the learning-plan agent is unavailable."
-        )
-
-    goal_info = days_until_goal(db, user_id)
-    if not topics_for(db, user_id):
+    topics = topics_for(db, user_id)
+    if not topics:
         raise ValueError(
             "No materials found. Upload study materials before generating a plan."
         )
 
-    plan_json = _run_agent(db, user_id)
+    gaps = gaps_service.compute_gaps(db, user_id)
+    goal_info = days_until_goal(db, user_id)
+    # _generate_plan_json -> anthropic_client.complete raises AnthropicUnavailableError
+    # if neither Groq nor Anthropic is configured; the /plan endpoint maps that to 503.
+    plan_json = _compose_plan(topics, gaps, goal_info)
 
     plan = db.scalar(select(LearningPlan).where(LearningPlan.user_id == user_id))
     if plan is None:
