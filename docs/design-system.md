@@ -1,7 +1,10 @@
 # Ilm AI — Design System Specification
 
-_Phase 0 deliverable. This is a **specification**, not yet applied to the app. It defines
-the tokens and component contracts that Phase 2 will roll out across every surface._
+_Phase 0 deliverable: the original **specification** and rationale. It is now
+**applied app-wide** — the tokens and component contracts here were rolled out
+across every surface via the UI-overhaul PRs (#14–#18). For the system **as
+built** (current tokens, component list, state conventions), see the canonical
+[`DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md) at the repo root._
 
 ## Direction
 

@@ -13,7 +13,7 @@
 ---
 
 ## Current Branch
-`perf/speed-audit-and-fixes` (Final Sprint — Priority 0)
+`chore/p1-ui-closure` (Final Sprint — P1 closure: verify + doc reconciliation)
 
 ---
 
@@ -36,7 +36,15 @@
       (login 1.54s ok, register 1.82s ~); chat first token < ~2s (stream ~2.0s ok); upload returns
       immediately (1.97s -> `processing`, background `ready` ~4s ok). Numbers in `PERF_AUDIT.md`.
       Pending: apply Alembic `0010` to Supabase (needs DB authorization).
-- [ ] **P1 UI Redesign** (ui-ux-pro-max, `DESIGN_SYSTEM.md`, 6 Tier-1 screens) — not started.
+- [x] **P1 UI Redesign** (ui-ux-pro-max, `DESIGN_SYSTEM.md`, 6 Tier-1 screens) — **already
+      delivered** via the merged UI-overhaul PRs #14–#18 (`feature/ui-overhaul`): teal+sand
+      design tokens in `frontend/tailwind.config.ts` + `app/globals.css`; full
+      `components/ui/` primitive library + `AppShell`; all six Tier-1 screens (landing, auth,
+      library, chat, quiz, plan) and Tier-2 pages (profile, billing, pricing, gaps) consume
+      the tokens with loading/empty/error states, a11y (focus rings, reduced-motion, zoom),
+      and i18n (en/ru/uz). This closure branch only reconciled stale docs: added canonical
+      root `DESIGN_SYSTEM.md`, corrected the `docs/design-system.md` "not yet applied" header,
+      and marked this item. Verified: `npm run build` passes (production build is the gate).
 - [ ] **P2 Telegram bot** functionality — not started.
 - [ ] **P3 Rubric gap closure** — not started.
 - [ ] **P4 Stretch** (flashcards, multimodal) — only if P0-P3 done.
