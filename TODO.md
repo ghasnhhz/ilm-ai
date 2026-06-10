@@ -45,7 +45,17 @@
       and i18n (en/ru/uz). This closure branch only reconciled stale docs: added canonical
       root `DESIGN_SYSTEM.md`, corrected the `docs/design-system.md` "not yet applied" header,
       and marked this item. Verified: `npm run build` passes (production build is the gate).
-- [ ] **P2 Telegram bot** functionality — not started.
+- [x] **P2 Telegram bot** functionality — **done** (branch `feat/telegram-functionality`).
+      The bot was already built end-to-end in Phase 7 (linking via deep-link token,
+      `/quiz` saved to the shared `quiz_*` tables, consecutive-day streak + milestone
+      messages, and `/reminder` delivered by the bot `job_queue` polling
+      `GET /telegram/reminders/due`). The one spec gap was that the reminder time could
+      only be set inside the bot; this branch adds a JWT `PUT /telegram/reminder`
+      endpoint + a time picker on the profile page so users pick it **in web settings**.
+      Scheduler kept as bot `job_queue` polling (satisfies "no Celery/Redis", keeps the
+      bot token in one process). Acceptance: link → set reminder in web → `/quiz` → streak
+      message. Verified: backend imports clean, `npm run build` passes. Full live bot
+      round-trip deferred (needs `TELEGRAM_BOT_TOKEN` + Postgres, unavailable locally).
 - [ ] **P3 Rubric gap closure** — not started.
 - [ ] **P4 Stretch** (flashcards, multimodal) — only if P0-P3 done.
 
