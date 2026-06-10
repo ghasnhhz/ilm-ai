@@ -27,7 +27,7 @@ export const en = {
   "upload.uncategorized": "Uncategorized",
   "upload.uploading": "Uploading…",
   "upload.dropPrompt": "Drag & drop, or click to choose",
-  "upload.fileTypes": "PDF, DOCX or TXT",
+  "upload.fileTypes": "PDF, DOCX, TXT or an image",
   "upload.titlePlaceholder": "Title",
   "upload.pastePlaceholder": "Paste your notes or text here…",
   "upload.addText": "Add text",
