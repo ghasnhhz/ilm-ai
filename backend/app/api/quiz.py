@@ -112,25 +112,24 @@ def get_results(
         .order_by(QuizQuestion.created_at)
     ).all()
 
-    answered_q_ids = set(
-        db.scalars(
-            select(QuizAnswer.question_id).where(QuizAnswer.user_id == current_user.id)
+    # Fetch every answer for this session's questions in one query (was N+1: one
+    # query per question). Ordered ascending so the last write per question wins.
+    question_ids = [q.id for q in questions]
+    latest_by_q: dict[uuid.UUID, QuizAnswer] = {
+        a.question_id: a
+        for a in db.scalars(
+            select(QuizAnswer)
+            .where(
+                QuizAnswer.question_id.in_(question_ids),
+                QuizAnswer.user_id == current_user.id,
+            )
+            .order_by(QuizAnswer.created_at)
         ).all()
-    )
+    }
 
     answer_details: list[AnswerDetail] = []
     for q in questions:
-        if q.id in answered_q_ids:
-            ans = db.scalar(
-                select(QuizAnswer)
-                .where(
-                    QuizAnswer.question_id == q.id,
-                    QuizAnswer.user_id == current_user.id,
-                )
-                .order_by(QuizAnswer.created_at.desc())
-            )
-        else:
-            ans = None
+        ans = latest_by_q.get(q.id)
 
         answer_details.append(
             AnswerDetail(
