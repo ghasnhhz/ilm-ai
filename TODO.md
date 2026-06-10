@@ -99,7 +99,15 @@
         run is the recordable acceptance flow.
         Follow-up: flashcards have no per-tier daily limit yet (stretch feature;
         LLM cost currently unbounded for free users — add a counter if needed).
-  - [ ] **S2 Multimodal upload** — not started (out of scope this session).
+  - [x] **S2 Multimodal upload** — image uploads (PNG/JPG/WEBP/GIF) are transcribed
+        to text via Claude vision (`anthropic_client.transcribe_image`,
+        `kind="vision_extract"`) and fed into the existing chunk→embed→pgvector
+        pipeline. Anthropic is called directly (Groq, the primary, is text-only);
+        no new dependency (`anthropic` SDK + stdlib `base64`). `extract_text` gains
+        an image branch; upload validation widened via `ALL_SUPPORTED_TYPES`;
+        frontend `ACCEPT` + `upload.fileTypes` i18n updated. Verified: backend
+        `pytest` green (new `test_ingest_multimodal.py`), frontend `npm run build`
+        passes. Live photo upload is the recordable flow (needs `ANTHROPIC_API_KEY`).
 
 ### P0 fixes landed (detail in `PERF_AUDIT.md`)
 - [x] DB pool warmup at startup (`db.warm_pool()` in lifespan)
