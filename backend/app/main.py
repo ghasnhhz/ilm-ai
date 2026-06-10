@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import OperationalError
 
 from app import __version__
 from app.api import (
@@ -33,6 +34,14 @@ if settings.sentry_dsn:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Warm the DB connection pool so the first user request doesn't pay the ~6s
+    # cost of establishing the first pooled connection to the remote Supabase pooler.
+    from app.core.db import warm_pool
+
+    try:
+        warm_pool()
+    except Exception:  # pragma: no cover - never block startup on a transient DB hiccup
+        pass
     # Download and cache the embedding model before accepting requests so it
     # doesn't happen mid-request while a DB session is held open.
     if not settings.dev_fake_embeddings:
@@ -57,7 +66,18 @@ async def _track_endpoint(request: Request, call_next):
     # Seed the request context so llm_logs rows carry the endpoint path.
     # get_current_user fills in the user id later, once auth resolves.
     set_request_endpoint(request.url.path)
-    return await call_next(request)
+
+    # We dropped pool_pre_ping for latency, so a connection the remote pooler
+    # closed while idle surfaces as a "connection invalidated" error on first
+    # use. SQLAlchemy invalidates it automatically; for safe idempotent methods
+    # we transparently retry once on a fresh connection. Writes are not retried.
+    try:
+        return await call_next(request)
+    except OperationalError as exc:
+        if request.method in ("GET", "HEAD") and getattr(exc, "connection_invalidated", False):
+            set_request_endpoint(request.url.path)
+            return await call_next(request)
+        raise
 
 
 @app.get("/health")
