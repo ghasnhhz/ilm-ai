@@ -90,6 +90,18 @@ def set_reminder(db: Session, chat_id: int, hour: int | None, minute: int | None
     db.commit()
 
 
+def set_reminder_for_user(
+    db: Session, user_id: uuid.UUID, hour: int | None, minute: int | None
+) -> None:
+    """Set (or clear, when both are None) the daily reminder from the web app."""
+    link = db.scalar(select(TelegramLink).where(TelegramLink.user_id == user_id))
+    if link is None:
+        raise LinkError("Connect Telegram first to set a daily reminder.")
+    link.reminder_hour = hour
+    link.reminder_minute = minute
+    db.commit()
+
+
 def due_reminders(db: Session) -> list[dict]:
     """Return chats whose reminder time matches the current minute (in the configured tz)."""
     now = datetime.now(ZoneInfo(settings.reminder_timezone))

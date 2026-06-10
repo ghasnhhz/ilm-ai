@@ -163,8 +163,13 @@ export const ru: Partial<Record<TKey, string>> = {
   "profile.longestStreak": "Лучшая серия: {days} дн.",
   "profile.reminderAt":
     "Ежедневное напоминание в {time} (задайте в боте через /reminder)",
-  "profile.noReminder":
-    "Напоминание не задано — отправьте боту /reminder ЧЧ:ММ",
+  "profile.noReminder": "Напоминание пока не задано",
+  "profile.reminderSetTitle": "Время ежедневного напоминания",
+  "profile.reminderSave": "Сохранить",
+  "profile.reminderClear": "Очистить",
+  "profile.reminderSaved": "Напоминание сохранено",
+  "profile.reminderCleared": "Напоминание удалено",
+  "profile.reminderSaveError": "Не удалось сохранить напоминание",
   "profile.telegramPitch":
     "Подключите Telegram, чтобы проходить тесты, получать ежедневные напоминания и поддерживать серию — не открывая приложение.",
   "profile.openTelegram": "Открыть в Telegram, чтобы завершить привязку",

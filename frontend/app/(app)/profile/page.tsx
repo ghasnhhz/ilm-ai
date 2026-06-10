@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Clock, Flame, Trophy } from "lucide-react";
+import { CheckCircle2, Flame, Trophy } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { apiFetch } from "@/lib/api";
@@ -46,6 +46,8 @@ export default function ProfilePage() {
   const [quizStats, setQuizStats] = useState<QuizStats | null>(null);
   const [telegram, setTelegram] = useState<TelegramConnection | null>(null);
   const [linkUrl, setLinkUrl] = useState<string | null>(null);
+  const [reminderTime, setReminderTime] = useState("");
+  const [savingReminder, setSavingReminder] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -55,7 +57,16 @@ export default function ProfilePage() {
     setTargetDate(data.goal?.target_date ?? "");
     apiFetch<QuizStats>("/quiz/stats", { token }).then(setQuizStats).catch(() => {});
     apiFetch<TelegramConnection>("/telegram/connection", { token })
-      .then(setTelegram)
+      .then((tg) => {
+        setTelegram(tg);
+        setReminderTime(
+          tg.reminder
+            ? `${String(tg.reminder.hour).padStart(2, "0")}:${String(
+                tg.reminder.minute,
+              ).padStart(2, "0")}`
+            : "",
+        );
+      })
       .catch(() => {});
   }, [token]);
 
@@ -70,6 +81,41 @@ export default function ProfilePage() {
     } catch {
       setLinkUrl(null);
     }
+  }
+
+  async function saveReminder() {
+    if (!token) return;
+    setSavingReminder(true);
+    try {
+      const [h, m] = reminderTime.split(":");
+      await apiFetch("/telegram/reminder", {
+        token,
+        method: "PUT",
+        body: { hour: Number(h), minute: Number(m) },
+      });
+      await load();
+      toast(t("profile.reminderSaved"), "success");
+    } catch {
+      toast(t("profile.reminderSaveError"), "error");
+    }
+    setSavingReminder(false);
+  }
+
+  async function clearReminder() {
+    if (!token) return;
+    setSavingReminder(true);
+    try {
+      await apiFetch("/telegram/reminder", {
+        token,
+        method: "PUT",
+        body: { hour: null, minute: null },
+      });
+      await load();
+      toast(t("profile.reminderCleared"), "success");
+    } catch {
+      toast(t("profile.reminderSaveError"), "error");
+    }
+    setSavingReminder(false);
   }
 
   useEffect(() => {
@@ -178,16 +224,42 @@ export default function ProfilePage() {
               <Trophy className="h-4 w-4 text-accent" aria-hidden="true" />
               {t("profile.longestStreak", { days: telegram.longest_streak })}
             </p>
-            <p className="flex items-center gap-2">
-              <Clock className="h-4 w-4" aria-hidden="true" />
-              {telegram.reminder
-                ? t("profile.reminderAt", {
-                    time: `${String(telegram.reminder.hour).padStart(2, "0")}:${String(
-                      telegram.reminder.minute,
-                    ).padStart(2, "0")}`,
-                  })
-                : t("profile.noReminder")}
-            </p>
+            <div className="border-t border-hairline pt-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <Field
+                  label={t("profile.reminderSetTitle")}
+                  hint={telegram.reminder ? undefined : t("profile.noReminder")}
+                  className="w-40"
+                >
+                  {(props) => (
+                    <Input
+                      {...props}
+                      type="time"
+                      value={reminderTime}
+                      onChange={(e) => setReminderTime(e.target.value)}
+                    />
+                  )}
+                </Field>
+                <Button
+                  size="sm"
+                  onClick={saveReminder}
+                  loading={savingReminder}
+                  disabled={!reminderTime}
+                >
+                  {t("profile.reminderSave")}
+                </Button>
+                {telegram.reminder ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={clearReminder}
+                    disabled={savingReminder}
+                  >
+                    {t("profile.reminderClear")}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="mt-2">
