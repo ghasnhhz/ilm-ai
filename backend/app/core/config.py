@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     reminder_timezone: str = "Asia/Tashkent"
 
     # --- LLM ---
+    # Groq is the primary provider (fast OpenAI-compatible inference); Anthropic
+    # is the automatic fallback when no Groq key is configured.
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-6"
     openai_api_key: str = ""

@@ -13,9 +13,48 @@
 ---
 
 ## Current Branch
-`chore/deployment`
+`perf/speed-audit-and-fixes` (Final Sprint — Priority 0)
 
-## Last Completed Task
+---
+
+# FINAL SPRINT (see `final-task.md`)
+
+## Current State (verified at start of sprint)
+- **Backend**: FastAPI, sync `def` handlers (FastAPI threadpools them — no async/asyncpg
+  rewrite needed). SQLAlchemy + psycopg2 to **Supabase pooler, Sydney region** — every DB
+  round-trip is ~1.3 s from this location, so round-trip *count* dominates latency.
+- Embedding model (`all-MiniLM-L6-v2`, 384-dim, local) already loads once at startup
+  (lifespan + `lru_cache`) — unchanged.
+- LLM was Anthropic Claude via `llm/anthropic_client.complete()` (single chokepoint used by
+  companion, quiz, plan). **Anthropic credits exhausted** → swapped primary provider to
+  **Groq `llama-3.3-70b-versatile`** (OpenAI-compatible via httpx, no new deps; Anthropic
+  kept as auto-fallback). Overrides CLAUDE.md "Anthropic as the LLM" per explicit user request.
+- pgvector HNSW index present; LLM logging (`llm_logs`) present but was a blocking per-call DB write.
+
+## Priority checklist
+- [x] **P0 Performance** — audit + fixes (this branch). Acceptance: login/register < ~1.5s warm
+      (login 1.54s ok, register 1.82s ~); chat first token < ~2s (stream ~2.0s ok); upload returns
+      immediately (1.97s -> `processing`, background `ready` ~4s ok). Numbers in `PERF_AUDIT.md`.
+      Pending: apply Alembic `0010` to Supabase (needs DB authorization).
+- [ ] **P1 UI Redesign** (ui-ux-pro-max, `DESIGN_SYSTEM.md`, 6 Tier-1 screens) — not started.
+- [ ] **P2 Telegram bot** functionality — not started.
+- [ ] **P3 Rubric gap closure** — not started.
+- [ ] **P4 Stretch** (flashcards, multimodal) — only if P0-P3 done.
+
+### P0 fixes landed (detail in `PERF_AUDIT.md`)
+- [x] DB pool warmup at startup (`db.warm_pool()` in lifespan)
+- [x] Dropped `pool_pre_ping` + pool sizing + recycle=180 + GET retry on stale conn
+- [x] Non-blocking `record_llm_call` (background thread pool)
+- [x] Removed redundant `db.refresh()` in auth + `expire_on_commit=False`
+- [x] Background document ingest (upload returns immediately; no DB conn held across embed)
+- [x] Single reused LLM HTTP client; Groq provider + Anthropic fallback
+- [x] `POST /chat/message/stream` SSE endpoint (existing `/chat/message` unchanged)
+- [x] Quiz-results N+1 -> one batched query
+- [x] Alembic `0010` created_at indexes (SQL validated offline; **apply to DB pending**)
+
+---
+
+## (historical, pre-sprint) Last Completed Task
 Phase 10 — Deployment (backend smoke tests `backend/tests/` — health 200, config
 list-parsing, `/admin/metrics` 403 without auth — + `backend/pyproject.toml` pinning
 pytest `testpaths` and ruff scope; `.github/workflows/ci.yml` runs backend `ruff check`
