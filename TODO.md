@@ -56,7 +56,38 @@
       bot token in one process). Acceptance: link → set reminder in web → `/quiz` → streak
       message. Verified: backend imports clean, `npm run build` passes. Full live bot
       round-trip deferred (needs `TELEGRAM_BOT_TOKEN` + Postgres, unavailable locally).
-- [ ] **P3 Rubric gap closure** — not started.
+- [x] **P3 Rubric gap closure** — done (branch `chore/rubric-gap-closure`). Most rubric
+      items were already satisfied and only needed verification; three real gaps were closed:
+      - **RAG Quality (20%)** — already enforced in `services/companion.py` (inline
+        `[Source title, #chunk]` citations, `[Outside knowledge]` flag, honest
+        "not in your materials", reply-in-learner's-language). Now demonstrated by the
+        50-sample eval set below. No code change.
+      - **Agent Behaviour (15%)** — gaps compute live every `/gaps` request; `mark_stale`
+        fires on goal change (`api/auth.py`), upload (`api/materials.py`), quiz completion
+        (`api/quiz.py`). **Fixed:** the learning-plan agent hard-required Anthropic
+        (`ChatAnthropic` + `ANTHROPIC_API_KEY`) and so was broken under the Groq swap;
+        `services/plan_agent.py` now composes the same fixed gaps→topics→days→generate_plan
+        sequence directly through the `anthropic_client` chokepoint (Groq primary,
+        Anthropic fallback) and removes the dead langchain code.
+      - **Code Quality (15%)** — verified: `core/config.py` fully env-driven with a
+        production secrets guard; no bare `except`/`except: pass`, no TODO/FIXME; structured
+        `HTTPException`s. Removed dead langchain plan-agent code (`_run_agent`/`_build_tools`/
+        `_make_usage_callback`).
+      - **Integrations (10%)** — Telegram done (P2); Stripe has a signature-verified webhook
+        (`api/payments.py`) that activates premium. Live test-mode round-trip **deferred**
+        (needs Stripe sandbox keys + Stripe CLI; no keys locally).
+      - **Eval & Monitoring (10%)** — **Fixed:** `llm_logs` now stores the (truncated, 4000
+        char) `prompt` + `response` text alongside tokens/latency/model (model + Alembic
+        `0011`, recorded in the llm/ layer for groq complete/stream + anthropic fallback).
+        Eval set grown from 6 → **50 rated samples** (`docs/eval/samples.jsonl`, en/ru/uz
+        17/17/16, all case types); `run_eval.py` accepts GROQ as a live provider and a
+        `--out` flag to collect responses to JSONL.
+      - **Product Thinking (15%)** — delivered by P1 UI overhaul (verified at P1 closure).
+      Verified: backend imports clean via venv; `ruff check` clean on touched files;
+      `pytest` 15 passed; `run_eval.py --dry-run` loads 50 samples. **Deferred** (no local
+      Postgres / sandbox keys, matching existing `[!]` conventions): apply Alembic `0011`
+      to Supabase; live plan generation against Groq + DB; Stripe test-mode webhook flips
+      premium. Deployment (15%) stays deferred to the Docker session.
 - [ ] **P4 Stretch** (flashcards, multimodal) — only if P0-P3 done.
 
 ### P0 fixes landed (detail in `PERF_AUDIT.md`)

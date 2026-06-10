@@ -46,7 +46,7 @@ model's actual answer next to the expected behaviour so a rater can compare and 
 fresh scores.
 
 ## Growing the set
-This is a starter set (~6 samples across all three languages and both grounded and
-out-of-material cases). Target for full evaluation: **≥50 rated samples**, balanced
-across languages, difficulty, and the grounded-vs-honest split. Add rows to
+The set now holds **50 rated samples** across all three languages (en/ru/uz ≈ 17/17/16)
+and case types (grounded recall, out-of-material honesty, `[Outside knowledge]` mixed,
+language-match, Socratic tone, multi-chunk synthesis). To grow it further, add rows to
 `samples.jsonl` following the same schema; no code change needed.

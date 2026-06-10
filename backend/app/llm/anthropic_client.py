@@ -44,6 +44,17 @@ def _openai_messages(system: str, messages: list[dict]) -> list[dict]:
     return [{"role": "system", "content": system}, *messages]
 
 
+def _serialize_prompt(system: str, messages: list[dict]) -> str:
+    """Flatten system + messages into one string for the llm_logs prompt column."""
+    lines = [f"[system] {system}"]
+    for m in messages:
+        content = m.get("content", "")
+        if not isinstance(content, str):  # defensive: some callers pass content blocks
+            content = str(content)
+        lines.append(f"[{m.get('role', 'user')}] {content}")
+    return "\n".join(lines)
+
+
 def _provider() -> str:
     if settings.groq_api_key:
         return "groq"
@@ -80,6 +91,7 @@ def _groq_complete(system: str, messages: list[dict], max_tokens: int, kind: str
     record_llm_call(
         kind=kind, model=settings.groq_model,
         input_tokens=in_tok, output_tokens=out_tok, latency_ms=latency_ms,
+        prompt=_serialize_prompt(system, messages), response=text,
     )
     return ChatResult(text=text, model=settings.groq_model, input_tokens=in_tok, output_tokens=out_tok)
 
@@ -89,6 +101,7 @@ def _groq_stream(system: str, messages: list[dict], max_tokens: int, kind: str) 
 
     started = time.perf_counter()
     in_tok = out_tok = 0
+    chunks: list[str] = []
     with _http.stream(
         "POST",
         _GROQ_URL,
@@ -117,12 +130,14 @@ def _groq_stream(system: str, messages: list[dict], max_tokens: int, kind: str) 
             if choices:
                 delta = choices[0].get("delta", {}).get("content")
                 if delta:
+                    chunks.append(delta)
                     yield delta
 
     latency_ms = int((time.perf_counter() - started) * 1000)
     record_llm_call(
         kind=kind, model=settings.groq_model,
         input_tokens=in_tok, output_tokens=out_tok, latency_ms=latency_ms,
+        prompt=_serialize_prompt(system, messages), response="".join(chunks),
     )
 
 
@@ -143,6 +158,7 @@ def _anthropic_complete(system: str, messages: list[dict], max_tokens: int, kind
         kind=kind, model=settings.anthropic_model,
         input_tokens=resp.usage.input_tokens, output_tokens=resp.usage.output_tokens,
         latency_ms=latency_ms,
+        prompt=_serialize_prompt(system, messages), response=text,
     )
     return ChatResult(
         text=text, model=settings.anthropic_model,

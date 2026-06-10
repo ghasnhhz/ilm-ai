@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.payment import PaymentEvent
+from app.models.payment import PaymentEvent, Subscription
 from app.services import limits
 
 
@@ -47,8 +47,6 @@ def _set_cancel_at_period_end(db: Session, user_id: uuid.UUID, cancel: bool) -> 
     """Schedule (or undo) cancellation on the user's Stripe subscription. The user
     keeps premium until the period end. Returns False if the user has no Stripe
     subscription (e.g. a Payme subscriber), so callers can fall back."""
-    from app.models.payment import Subscription
-
     sub = db.scalar(select(Subscription).where(Subscription.user_id == user_id))
     if sub is None or sub.provider != "stripe" or not sub.provider_subscription_id:
         return False
@@ -101,8 +99,6 @@ def _user_from_metadata(obj: dict) -> uuid.UUID | None:
 
 
 def _local_sub_by_provider_id(db: Session, sub_id: str | None) -> "Subscription | None":
-    from app.models.payment import Subscription
-
     if not sub_id:
         return None
     return db.scalar(
