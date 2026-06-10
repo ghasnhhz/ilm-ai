@@ -28,7 +28,7 @@ export const uz: Partial<Record<TKey, string>> = {
   "upload.uncategorized": "Turkumlanmagan",
   "upload.uploading": "Yuklanmoqda…",
   "upload.dropPrompt": "Faylni tashlang yoki tanlash uchun bosing",
-  "upload.fileTypes": "PDF, DOCX yoki TXT",
+  "upload.fileTypes": "PDF, DOCX, TXT yoki rasm",
   "upload.titlePlaceholder": "Sarlavha",
   "upload.pastePlaceholder": "Eslatma yoki matningizni shu yerga joylang…",
   "upload.addText": "Matn qo'shish",

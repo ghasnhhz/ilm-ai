@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
-const ACCEPT = ".pdf,.docx,.txt";
+const ACCEPT = ".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp";
 
 export function UploadZone({
   token,

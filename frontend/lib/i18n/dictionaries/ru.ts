@@ -28,7 +28,7 @@ export const ru: Partial<Record<TKey, string>> = {
   "upload.uncategorized": "Без категории",
   "upload.uploading": "Загрузка…",
   "upload.dropPrompt": "Перетащите файл или нажмите, чтобы выбрать",
-  "upload.fileTypes": "PDF, DOCX или TXT",
+  "upload.fileTypes": "PDF, DOCX, TXT или изображение",
   "upload.titlePlaceholder": "Название",
   "upload.pastePlaceholder": "Вставьте сюда свои заметки или текст…",
   "upload.addText": "Добавить текст",
