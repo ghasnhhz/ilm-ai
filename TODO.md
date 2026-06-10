@@ -88,7 +88,18 @@
       Postgres / sandbox keys, matching existing `[!]` conventions): apply Alembic `0011`
       to Supabase; live plan generation against Groq + DB; Stripe test-mode webhook flips
       premium. Deployment (15%) stays deferred to the Docker session.
-- [ ] **P4 Stretch** (flashcards, multimodal) — only if P0-P3 done.
+- [~] **P4 Stretch** (flashcards, multimodal) — only if P0-P3 done.
+  - [x] **S3 Flashcards** — `/flashcards` bot command generates 8 cards from the
+        user's materials (RAG retrieve → LLM `kind="flashcard_generate"` → JSON) and
+        sends them to Telegram, one card per message. Telegram-only, ephemeral (no DB
+        table/migration, no web UI), per user-confirmed minimal scope. New
+        `services/flashcard.py`, `POST /telegram/flashcards/generate` (shared-secret),
+        bot client + handler, parser unit tests. Verified: `ruff` clean, `pytest`
+        green, endpoint registered + service/bot imports clean. Live `/flashcards`
+        run is the recordable acceptance flow.
+        Follow-up: flashcards have no per-tier daily limit yet (stretch feature;
+        LLM cost currently unbounded for free users — add a counter if needed).
+  - [ ] **S2 Multimodal upload** — not started (out of scope this session).
 
 ### P0 fixes landed (detail in `PERF_AUDIT.md`)
 - [x] DB pool warmup at startup (`db.warm_pool()` in lifespan)
