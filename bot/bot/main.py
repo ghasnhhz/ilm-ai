@@ -34,8 +34,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             result = await api.link(token, update.effective_chat.id)
             await update.message.reply_text(
                 f"✅ Linked! Welcome, {result.get('name', 'learner')}.\n\n"
-                "Use /quiz for a quick 5-question session, /reminder HH:MM to schedule "
-                "daily nudges, and /streak to track your run."
+                "Use /quiz for a quick 5-question session, /flashcards to study cards "
+                "from your materials, /reminder HH:MM to schedule daily nudges, and "
+                "/streak to track your run."
             )
         except api.BackendError as e:
             await update.message.reply_text(f"Couldn't link this chat: {e}")
@@ -43,8 +44,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text(
         "Salom! I'm Ilm AI — your learning companion.\n\n"
-        "Use /quiz for a quick 5-question session, /reminder HH:MM to schedule daily "
-        "nudges, /streak to see your run, and /status to check your link.\n\n"
+        "Use /quiz for a quick 5-question session, /flashcards to study cards from your "
+        "materials, /reminder HH:MM to schedule daily nudges, /streak to see your run, "
+        "and /status to check your link.\n\n"
         + LINK_HINT,
         parse_mode="Markdown",
     )
@@ -138,6 +140,40 @@ async def on_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context.user_data.pop("quiz", None)
     else:
         await _send_question(query.message.chat, context)
+
+
+# --- /flashcards -------------------------------------------------------------
+
+async def flashcards(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id
+    await update.message.reply_text("Making your flashcards… one moment.")
+    try:
+        data = await api.flashcards_generate(chat_id)
+    except api.BackendError as e:
+        msg = str(e)
+        if "linked" in msg.lower():
+            await update.message.reply_text(LINK_HINT, parse_mode="Markdown")
+        else:
+            await update.message.reply_text(f"Couldn't make flashcards: {msg}")
+        return
+
+    cards = data.get("flashcards", [])
+    if not cards:
+        await update.message.reply_text(
+            "I couldn't make flashcards from your materials yet. "
+            "Upload some study materials in the app first."
+        )
+        return
+
+    n = len(cards)
+    await update.message.reply_text(f"🃏 {n} flashcards from your materials:")
+    for i, card in enumerate(cards, start=1):
+        header = f"🃏 Card {i}/{n}"
+        if card.get("concept"):
+            header += f"  ·  {card['concept']}"
+        await update.effective_chat.send_message(
+            f"{header}\n\n❓ {card['front']}\n\n💡 {card['back']}"
+        )
 
 
 # --- /reminder, /streak, /status ---------------------------------------------
@@ -234,6 +270,7 @@ def build_app() -> Application:
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("quiz", quiz))
+    app.add_handler(CommandHandler("flashcards", flashcards))
     app.add_handler(CommandHandler("reminder", reminder))
     app.add_handler(CommandHandler("streak", streak))
     app.add_handler(CommandHandler("status", status))

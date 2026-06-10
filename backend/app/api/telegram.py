@@ -9,6 +9,9 @@ from app.core.security import create_telegram_link_token
 from app.models.telegram import TelegramLink
 from app.models.user import User
 from app.schemas.telegram import (
+    BotFlashcard,
+    BotFlashcardGenerateRequest,
+    BotFlashcardGenerateResponse,
     BotQuizAnswerRequest,
     BotQuizAnswerResponse,
     BotQuizGenerateRequest,
@@ -24,6 +27,7 @@ from app.schemas.telegram import (
     StatusOut,
     WebReminderRequest,
 )
+from app.services import flashcard as flashcard_service
 from app.services import limits
 from app.services import quiz as quiz_service
 from app.services import telegram_service
@@ -178,6 +182,34 @@ def bot_quiz_answer(
         explanation=result.explanation,
         correct_answer=result.correct_answer,
         streak=streak,
+    )
+
+
+@router.post(
+    "/flashcards/generate",
+    response_model=BotFlashcardGenerateResponse,
+    dependencies=[Depends(require_bot_secret)],
+)
+def bot_flashcards_generate(
+    payload: BotFlashcardGenerateRequest, db: Session = Depends(get_db)
+) -> BotFlashcardGenerateResponse:
+    try:
+        user_id = telegram_service.resolve_user_id(db, payload.chat_id)
+    except LinkError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    try:
+        cards = flashcard_service.generate_flashcards(db, user_id, None, 8)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate flashcards: {e}",
+        )
+    return BotFlashcardGenerateResponse(
+        flashcards=[
+            BotFlashcard(front=c.front, back=c.back, concept=c.concept) for c in cards
+        ]
     )
 
 

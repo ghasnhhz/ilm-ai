@@ -56,6 +56,10 @@ async def quiz_answer(chat_id: int, question_id: str, answer: str) -> dict:
     )
 
 
+async def flashcards_generate(chat_id: int) -> dict:
+    return await _request("POST", "/telegram/flashcards/generate", json={"chat_id": chat_id})
+
+
 async def set_reminder(chat_id: int, hour: int | None, minute: int | None) -> dict:
     return await _request(
         "POST",
