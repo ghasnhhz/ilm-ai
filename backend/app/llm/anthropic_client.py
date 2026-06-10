@@ -8,6 +8,7 @@ token usage logged to ``llm_logs`` (Phase 9). The public surface — ``complete`
 unchanged so all callers (companion, quiz, plan) keep working untouched.
 """
 
+import base64
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -164,6 +165,63 @@ def _anthropic_complete(system: str, messages: list[dict], max_tokens: int, kind
         text=text, model=settings.anthropic_model,
         input_tokens=resp.usage.input_tokens, output_tokens=resp.usage.output_tokens,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Anthropic vision (image -> text)                                              #
+# --------------------------------------------------------------------------- #
+_VISION_PROMPT = (
+    "Transcribe this image into plain text for a study knowledge base. "
+    "It may be a photo of handwritten notes, a textbook page, a whiteboard, or a "
+    "slide. Faithfully output ALL text and meaningful content you can read, "
+    "preserving the natural reading order. If the image contains a diagram or "
+    "table, describe it briefly in words. Output only the transcribed content — "
+    "no preamble, no commentary."
+)
+
+
+def transcribe_image(data: bytes, media_type: str, kind: str = "vision_extract") -> str:
+    """Transcribe an image to text via Anthropic's vision API.
+
+    Always uses Anthropic directly (the primary Groq model is text-only), so it
+    requires ``ANTHROPIC_API_KEY``. The call is recorded through the usual
+    ``llm_logs`` path, mirroring ``_anthropic_complete``.
+    """
+    if not settings.anthropic_api_key:
+        raise AnthropicUnavailableError(
+            "Image upload needs Claude vision; set ANTHROPIC_API_KEY to enable it."
+        )
+
+    from anthropic import Anthropic
+
+    b64 = base64.standard_b64encode(data).decode()
+    client = Anthropic(api_key=settings.anthropic_api_key)
+    started = time.perf_counter()
+    resp = client.messages.create(
+        model=settings.anthropic_model,
+        max_tokens=2048,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": media_type, "data": b64},
+                    },
+                    {"type": "text", "text": _VISION_PROMPT},
+                ],
+            }
+        ],
+    )
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    text = "".join(block.text for block in resp.content if block.type == "text")
+    record_llm_call(
+        kind=kind, model=settings.anthropic_model,
+        input_tokens=resp.usage.input_tokens, output_tokens=resp.usage.output_tokens,
+        latency_ms=latency_ms,
+        prompt=f"[vision] {media_type} transcription", response=text,
+    )
+    return text
 
 
 # --------------------------------------------------------------------------- #

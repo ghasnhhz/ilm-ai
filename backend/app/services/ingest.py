@@ -8,6 +8,17 @@ CHUNK_OVERLAP = 50
 _CHARS_PER_TOKEN = 4  # rough fallback when tiktoken is unavailable
 
 SUPPORTED_TYPES = {"pdf", "docx", "txt"}
+# Image types are transcribed to text via Claude vision (see extract_text).
+IMAGE_TYPES = {"png", "jpg", "jpeg", "webp", "gif"}
+_IMAGE_MEDIA_TYPES = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "webp": "image/webp",
+    "gif": "image/gif",
+}
+# Everything the upload endpoint accepts.
+ALL_SUPPORTED_TYPES = SUPPORTED_TYPES | IMAGE_TYPES
 
 
 @dataclass
@@ -31,6 +42,10 @@ def extract_text(data: bytes, file_type: str) -> str:
         return "\n".join(p.text for p in document.paragraphs)
     if file_type == "txt":
         return data.decode("utf-8", errors="ignore")
+    if file_type in IMAGE_TYPES:
+        from app.llm.anthropic_client import transcribe_image
+
+        return transcribe_image(data, _IMAGE_MEDIA_TYPES[file_type])
     raise ValueError(f"Unsupported file type: {file_type}")
 
 
