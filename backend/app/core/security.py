@@ -48,11 +48,6 @@ def create_refresh_token(subject: str) -> str:
     )
 
 
-def create_telegram_link_token(subject: str) -> str:
-    """Short-lived token the web app hands to the user to link their Telegram chat."""
-    return _create_token(subject, "telegram_link", timedelta(minutes=10))
-
-
 def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])

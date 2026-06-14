@@ -4,7 +4,7 @@ from app.models.material import Collection, Material, MaterialChunk
 from app.models.payment import PaymentEvent, PaymeTransaction, Subscription
 from app.models.plan import LearningPlan
 from app.models.quiz import QuizAnswer, QuizQuestion, QuizSession
-from app.models.telegram import TelegramLink
+from app.models.telegram import TelegramLink, TelegramLinkToken
 from app.models.user import User, UserGoal
 
 __all__ = [
@@ -20,6 +20,7 @@ __all__ = [
     "QuizAnswer",
     "LearningPlan",
     "TelegramLink",
+    "TelegramLinkToken",
     "Subscription",
     "PaymentEvent",
     "PaymeTransaction",

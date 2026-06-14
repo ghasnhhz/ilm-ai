@@ -4,31 +4,59 @@ The bot is stateless; everything that needs to persist (which chat belongs to wh
 user, reminder times, streaks) lives in `telegram_links` and is driven from here.
 """
 
+import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.security import decode_token
-from app.models.telegram import TelegramLink
+from app.models.telegram import TelegramLink, TelegramLinkToken
 from app.models.user import User
+
+# How long a generated link token stays valid before the user must request a new one.
+LINK_TOKEN_TTL = timedelta(minutes=10)
 
 
 class LinkError(ValueError):
     """Raised when a Telegram link token is missing, expired, or the wrong type."""
 
 
+def create_link_token(db: Session, user_id: uuid.UUID) -> str:
+    """Issue a fresh single-use link token, replacing any the user already holds.
+
+    The token must survive Telegram's deep-link ``?start=`` parameter, which only
+    allows ``A-Z a-z 0-9 _ -`` (max 64 chars), so it is an opaque ``token_urlsafe``
+    string (32 chars, no ``.``) — never a JWT.
+    """
+    db.execute(delete(TelegramLinkToken).where(TelegramLinkToken.user_id == user_id))
+    token = secrets.token_urlsafe(24)
+    db.add(
+        TelegramLinkToken(
+            token=token,
+            user_id=user_id,
+            expires_at=datetime.now(timezone.utc) + LINK_TOKEN_TTL,
+        )
+    )
+    db.commit()
+    return token
+
+
 def link_account(db: Session, token: str, chat_id: int) -> str:
-    data = decode_token(token)
-    if data is None or data.get("type") != "telegram_link":
-        raise LinkError("This link is invalid or has expired. Generate a new one in the app.")
-    try:
-        user_id = uuid.UUID(str(data.get("sub")))
-    except (ValueError, TypeError):
-        raise LinkError("This link is invalid. Generate a new one in the app.")
+    invalid = "This link is invalid or has expired. Generate a new one in the app."
+    row = db.get(TelegramLinkToken, token)
+    if row is None:
+        raise LinkError(invalid)
+    if row.expires_at < datetime.now(timezone.utc):
+        db.delete(row)
+        db.commit()
+        raise LinkError(invalid)
+
+    user_id = row.user_id
+    # Single-use: drop the token so it can't be replayed. Persisted by the commit below.
+    db.delete(row)
 
     user = db.get(User, user_id)
     if user is None:

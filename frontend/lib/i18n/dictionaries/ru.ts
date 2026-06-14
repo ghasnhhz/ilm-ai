@@ -174,6 +174,7 @@ export const ru: Partial<Record<TKey, string>> = {
     "Подключите Telegram, чтобы проходить тесты, получать ежедневные напоминания и поддерживать серию — не открывая приложение.",
   "profile.openTelegram": "Открыть в Telegram, чтобы завершить привязку",
   "profile.connectTelegram": "Подключить Telegram",
+  "profile.telegramLinkError": "Не удалось начать привязку Telegram. Попробуйте ещё раз.",
 
   // Billing
   "billing.title": "Оплата",
