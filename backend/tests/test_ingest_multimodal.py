@@ -8,7 +8,6 @@ behaviour is unchanged. The vision call itself is mocked — no network, no key.
 
 import pytest
 
-from app.services import ingest
 from app.services.ingest import ALL_SUPPORTED_TYPES, IMAGE_TYPES, SUPPORTED_TYPES, extract_text
 
 
