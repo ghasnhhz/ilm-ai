@@ -282,6 +282,19 @@ run live Render deploy + smoke test once an account/secrets exist; `npm audit` c
       with `BACKEND_INTERNAL_URL=http://localhost:<port>` (it does not load `.env`).
       Follow-up: apply Alembic `0011` to Supabase so LLM-call logging stops erroring on the
       missing `llm_logs.prompt/response` columns (swallowed today, non-fatal).
+- [x] **Fix linking never completing** (`fix/telegram-link-token`, 2026-06-14): the link
+      deep link embedded a **JWT** in Telegram's `?start=` param, which only allows
+      `A-Z a-z 0-9 _ -` (≤64 chars). The JWT (dots, ~200 chars) was silently dropped by
+      Telegram, so pressing **Start** sent a bare `/start` → bot showed the generic welcome,
+      never linked, and every command reported "not linked". Replaced the JWT with a compact
+      single-use opaque token (`secrets.token_urlsafe(24)` → 32 chars) stored in a new
+      `telegram_link_tokens` table (Alembic `0012`, 10-min TTL, consumed on use). Removed the
+      dead `create_telegram_link_token` JWT helper; added a regression test asserting the
+      token matches Telegram's start-param charset; surfaced the previously-silent
+      `connectTelegram()` failure with an error toast. Verified: migration up/down clean,
+      service round-trip (create → link → resolve, replay rejected) green against the dev DB,
+      backend suite + ruff + frontend `tsc` pass.
+      Follow-up: apply Alembic `0012` to Supabase (prod DB).
 
 ## Phase 8 — Payments [`feature/payments`]
 - [x] Models: `subscriptions`, `payment_events` (+ `payme_transactions` for the Payme state machine)
