@@ -80,6 +80,7 @@ export default function ProfilePage() {
       setLinkUrl(deep_link);
     } catch {
       setLinkUrl(null);
+      toast(t("profile.telegramLinkError"), "error");
     }
   }
 

@@ -172,6 +172,7 @@ export const en = {
     "Link Telegram to quiz yourself, get daily reminders, and build a streak — without opening the app.",
   "profile.openTelegram": "Open in Telegram to finish linking",
   "profile.connectTelegram": "Connect Telegram",
+  "profile.telegramLinkError": "Could not start Telegram linking. Please try again.",
 
   // Billing
   "billing.title": "Billing",

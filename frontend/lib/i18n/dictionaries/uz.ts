@@ -174,6 +174,7 @@ export const uz: Partial<Record<TKey, string>> = {
     "O'zingizni sinash, kunlik eslatmalar olish va seriya yig'ish uchun Telegramni ulang — ilovani ochmasdan.",
   "profile.openTelegram": "Ulashni yakunlash uchun Telegramda oching",
   "profile.connectTelegram": "Telegramni ulash",
+  "profile.telegramLinkError": "Telegram ulashni boshlab bo'lmadi. Qayta urinib ko'ring.",
 
   // Billing
   "billing.title": "To'lov",
