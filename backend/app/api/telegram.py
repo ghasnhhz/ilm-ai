@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.db import get_db
-from app.core.security import create_telegram_link_token
 from app.models.telegram import TelegramLink
 from app.models.user import User
 from app.schemas.telegram import (
@@ -56,8 +55,11 @@ def _reminder_info(link) -> ReminderInfo | None:
 # --- Web endpoints (JWT) -----------------------------------------------------
 
 @router.post("/link-token", response_model=LinkTokenOut)
-def link_token(current_user: User = Depends(get_current_user)) -> LinkTokenOut:
-    token = create_telegram_link_token(str(current_user.id))
+def link_token(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LinkTokenOut:
+    token = telegram_service.create_link_token(db, current_user.id)
     username = settings.telegram_bot_username or "your_bot"
     return LinkTokenOut(token=token, deep_link=f"https://t.me/{username}?start={token}")
 
