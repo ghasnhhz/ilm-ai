@@ -295,6 +295,19 @@ run live Render deploy + smoke test once an account/secrets exist; `npm audit` c
       service round-trip (create → link → resolve, replay rejected) green against the dev DB,
       backend suite + ruff + frontend `tsc` pass.
       Follow-up: apply Alembic `0012` to Supabase (prod DB).
+- [x] **Fix unresponsive bot** (`fix/telegram-link-token`, 2026-06-14): `/start` got no
+      reply because the bot process never came up. Root cause: the bot read `os.environ`
+      directly and **never loaded `.env`** (no `python-dotenv`), so `python -m bot.main`
+      with no exported vars hit `RuntimeError("TELEGRAM_BOT_TOKEN is not set")` and died —
+      nothing polled. Evidence: `getMe` OK, no webhook, no 409, but 6 pending updates sat
+      unconsumed. Fix: load the repo-root `.env` in `bot/bot/__init__.py` via
+      `load_dotenv(..., override=False)` (mirrors `backend/app/core/config.py`; `override=False`
+      keeps a shell-exported `BACKEND_INTERNAL_URL=http://localhost:8000` winning for local
+      runs); added `python-dotenv==1.0.1` to `bot/requirements.txt`. Verified live: bot starts
+      (`getMe`/`getUpdates` 200), processes pending updates, settles into clean polling.
+      Watch: bot has **no error handler** registered — a per-chat `sendMessage` failure
+      (e.g. a user who blocked the bot → 403) only logs a traceback (non-fatal, bot keeps
+      running). Consider adding `app.add_error_handler(...)` later.
 
 ## Phase 8 — Payments [`feature/payments`]
 - [x] Models: `subscriptions`, `payment_events` (+ `payme_transactions` for the Payme state machine)
