@@ -269,7 +269,19 @@ run live Render deploy + smoke test once an account/secrets exist; `npm audit` c
 - [x] APScheduler (PTB job_queue) 60s tick: daily reminders + streak increment + milestone celebration
 - [x] Frontend: profile "Connect Telegram" section (deep link + linked status/streak)
 - [x] Verify (partial): frontend `npm run build` + `tsc --noEmit` pass; backend + bot `py_compile` pass
-- [!] Verify (deferred, needs TELEGRAM_BOT_TOKEN + Docker/Postgres): link works; inline quiz records; reminder scheduled; streak increments
+- [x] Verify (live, local, no Docker — 2026-06-14): backend (uvicorn) + bot (`python -m bot.main`,
+      polling) run locally against Supabase. Full pipeline replayed via the bot's own backend
+      calls on a throwaway account: link OK, `/quiz` generated MC from a pasted note (RAG+Groq),
+      answers graded + saved, streak incremented to 1, reminder set for the current minute and
+      returned by `GET /telegram/reminders/due`. Bot live-polls Telegram (getMe/getUpdates 200).
+      Fixed a blocking bug: `bot/requirements.txt` pinned `APScheduler==3.11.0`, which conflicts
+      with `python-telegram-bot[job-queue]==21.9` (needs <3.11) — bumped to `3.10.4` so the bot
+      actually installs (Docker build would have failed too). Local run also requires
+      `TELEGRAM_BOT_SECRET` (added to `.env`, shared with the bot process) and
+      `TELEGRAM_BOT_USERNAME=IlmAIWithYou_bot`; the bot reads its env from the launching shell
+      with `BACKEND_INTERNAL_URL=http://localhost:<port>` (it does not load `.env`).
+      Follow-up: apply Alembic `0011` to Supabase so LLM-call logging stops erroring on the
+      missing `llm_logs.prompt/response` columns (swallowed today, non-fatal).
 
 ## Phase 8 — Payments [`feature/payments`]
 - [x] Models: `subscriptions`, `payment_events` (+ `payme_transactions` for the Payme state machine)
