@@ -23,8 +23,11 @@ services:
     dockerContext: ./backend
     plan: free
     healthCheckPath: /health
-    # Apply DB migrations (and create the pgvector extension) before traffic shifts.
-    preDeployCommand: alembic upgrade head
+    # Apply DB migrations on startup, then serve. Free-tier services don't support
+    # preDeployCommand, so migrations run in the start command instead. `alembic upgrade
+    # head` is idempotent (it skips already-applied revisions), so cold-start restarts on
+    # the free plan are harmless. Migration 0002 creates the pgvector extension.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000
     envVars:
       # Supabase pooler connection string (postgresql+psycopg2://…pooler.supabase.com:6543/postgres).
       - key: DATABASE_URL
