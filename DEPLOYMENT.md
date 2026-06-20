@@ -13,35 +13,43 @@ Three supported paths: **Render** (recommended, blueprint-driven), **Railway**, 
 
 ## Option A — Render (recommended)
 
-Render reads [`render.yaml`](./render.yaml) and provisions a Postgres database plus
-three services: `ilm-backend` (web), `ilm-frontend` (web), and `ilm-bot` (worker).
+Render reads [`render.yaml`](./render.yaml) and provisions two web services:
+`ilm-backend` and `ilm-frontend`. The database is an **existing Supabase Postgres**
+(not Render-managed) — set `DATABASE_URL` in the dashboard for `ilm-backend` to the
+Supabase pooler connection string (`postgresql+psycopg2://…pooler.supabase.com:6543/postgres`).
+
+> The **Telegram bot is not in this blueprint**: Render's free tier has no background
+> workers. Host it on an always-on platform with a free worker (e.g. Koyeb) or run it
+> locally, built from `./bot/Dockerfile`. It needs `TELEGRAM_BOT_TOKEN`,
+> `TELEGRAM_BOT_SECRET`, `DATABASE_URL` (Supabase), and `BACKEND_INTERNAL_URL` → the
+> deployed backend URL.
 
 ### 1. Create the blueprint
 1. Push this repo to GitHub (already done for `main`).
 2. In Render: **New +** → **Blueprint** → connect the repo → **Apply**.
-3. Render creates `ilm-db`, `ilm-backend`, `ilm-frontend`, `ilm-bot` and the
-   `ilm-secrets` env group.
+3. Render creates `ilm-backend`, `ilm-frontend` and the `ilm-secrets` env group.
+   (No database — this app uses Supabase; the bot is hosted separately, see above.)
 
 ### 2. Set secrets
 Every value declared `sync: false` in `render.yaml` must be set in the dashboard:
 - **Env group `ilm-secrets`** (backend): `JWT_SECRET`, `AUTH_BRIDGE_SECRET`,
   `TELEGRAM_BOT_SECRET`, `TELEGRAM_BOT_USERNAME`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`,
   `S3_*`, `SUPABASE_URL`, `STRIPE_*`, `PAYME_*`, `SENTRY_DSN`, `ADMIN_EMAILS`.
-  (`ANTHROPIC_MODEL` defaults to `claude-sonnet-4-6`.)
-- **`ilm-backend`**: `CORS_ORIGINS` and `APP_BASE_URL` → the frontend's URL
-  (e.g. `https://ilm-frontend.onrender.com`).
+  (`ANTHROPIC_MODEL` defaults to `claude-sonnet-4-6`. The primary LLM is Groq — also add
+  `GROQ_API_KEY` here.)
+- **`ilm-backend`**: `DATABASE_URL` (Supabase pooler string), plus `CORS_ORIGINS` and
+  `APP_BASE_URL` → the frontend's URL (e.g. `https://ilm-frontend.onrender.com`).
 - **`ilm-frontend`**: `NEXT_PUBLIC_API_URL` → the backend's URL
   (e.g. `https://ilm-backend.onrender.com`), plus `NEXTAUTH_URL` (the frontend URL),
   `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID/SECRET`, `NEXT_PUBLIC_SENTRY_DSN`.
   `NEXT_PUBLIC_*` is baked at build time — set these **before** the first build, then
   trigger a redeploy.
-- **`ilm-bot`**: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_SECRET`, and `BACKEND_INTERNAL_URL`
-  → the backend URL.
 
 ### 3. Migrations
-`ilm-backend` runs `alembic upgrade head` as its **pre-deploy command** (in
-`render.yaml`), so the schema + pgvector are applied on every deploy before traffic
-shifts. No manual step needed.
+`ilm-backend` runs `alembic upgrade head` in its **start command** (in `render.yaml`)
+before uvicorn, so the schema is applied on startup. Free-tier services don't support
+pre-deploy commands; the command is idempotent, so cold-start restarts re-run it safely.
+Supabase ships pgvector already enabled.
 
 ### 4. Continuous deploys
 - Render's GitHub integration auto-deploys on push to `main`.
@@ -50,8 +58,8 @@ shifts. No manual step needed.
   [`deploy.yml`](./.github/workflows/deploy.yml) workflow pings it on push to `main`
   (and no-ops if the secret is absent).
 
-> **Free tier caveats**: free web services sleep on inactivity (cold starts) and the
-> free Postgres database expires after ~90 days. Use paid plans for anything persistent.
+> **Free tier caveats**: free web services sleep on inactivity, so the first request
+> after idle pays a cold start. Use paid plans to avoid sleeping.
 
 ---
 
