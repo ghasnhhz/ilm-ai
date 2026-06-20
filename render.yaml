@@ -62,24 +62,12 @@ services:
       - key: NEXT_PUBLIC_SENTRY_DSN
         sync: false
 
-  # ---- Telegram bot (worker, no public port) ----
-  - type: worker
-    name: ilm-bot
-    runtime: docker
-    dockerfilePath: ./bot/Dockerfile
-    dockerContext: ./bot
-    plan: free
-    envVars:
-      # Same Supabase pooler connection string as ilm-backend.
-      - key: DATABASE_URL
-        sync: false
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: TELEGRAM_BOT_SECRET
-        sync: false
-      # Backend base URL the bot calls — set to the backend's https URL in the dashboard.
-      - key: BACKEND_INTERNAL_URL
-        sync: false
+  # ---- Telegram bot ----
+  # NOT deployed via this blueprint: Render's free tier has no background workers, and the
+  # bot is a long-polling worker (no public port). Host it on an always-on platform that
+  # offers a free worker (e.g. Koyeb) or run it locally. It needs only TELEGRAM_BOT_TOKEN,
+  # TELEGRAM_BOT_SECRET, DATABASE_URL (Supabase), and BACKEND_INTERNAL_URL → the deployed
+  # backend's https URL. Build it from ./bot/Dockerfile. See DEPLOYMENT.md.
 
 # Shared backend secrets — set each value once in the dashboard (Environment → Env Groups).
 envVarGroups:
