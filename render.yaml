@@ -5,12 +5,14 @@
 # `sync: false`, so set them in the dashboard after the first apply (see DEPLOYMENT.md).
 #
 # pgvector: the backend's pre-deploy `alembic upgrade head` runs migration 0002, which
-# does `CREATE EXTENSION IF NOT EXISTS vector`. Render's managed Postgres allows this.
-
-databases:
-  - name: ilm-db
-    plan: free
-    postgresMajorVersion: "16"
+# does `CREATE EXTENSION IF NOT EXISTS vector`. Supabase ships pgvector already enabled.
+#
+# Database: this app uses an existing Supabase Postgres (not a Render-managed db). Set
+# DATABASE_URL in the dashboard for both ilm-backend and ilm-bot to the Supabase pooler
+# connection string, e.g.
+#   postgresql+psycopg2://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+# Use the *pooler* (transaction mode, port 6543) host, and the `postgresql+psycopg2://`
+# scheme so SQLAlchemy picks the sync driver.
 
 services:
   # ---- Backend (FastAPI) ----
@@ -24,10 +26,9 @@ services:
     # Apply DB migrations (and create the pgvector extension) before traffic shifts.
     preDeployCommand: alembic upgrade head
     envVars:
+      # Supabase pooler connection string (postgresql+psycopg2://…pooler.supabase.com:6543/postgres).
       - key: DATABASE_URL
-        fromDatabase:
-          name: ilm-db
-          property: connectionString
+        sync: false
       - fromGroup: ilm-secrets
       # Comma-separated allowed origins — set to the frontend URL after first deploy.
       - key: CORS_ORIGINS
@@ -66,10 +67,9 @@ services:
     dockerContext: ./bot
     plan: free
     envVars:
+      # Same Supabase pooler connection string as ilm-backend.
       - key: DATABASE_URL
-        fromDatabase:
-          name: ilm-db
-          property: connectionString
+        sync: false
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_BOT_SECRET
